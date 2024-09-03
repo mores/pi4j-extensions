@@ -10,7 +10,6 @@ import com.pi4j.io.gpio.digital.DigitalState;
 import com.pi4j.io.gpio.digital.PullResistance;
 
 import com.pi4j.extensions.base.DigitalSensor;
-import com.pi4j.extensions.base.PIN;
 import com.pi4j.extensions.base.Resetable;
 import com.pi4j.extensions.Utils;
 
@@ -66,7 +65,7 @@ public class SimpleButton extends DigitalSensor implements Resetable {
      * @param pi4j
      *            Pi4J context
      */
-    public SimpleButton(Context pi4j, PIN address, boolean inverted) {
+    public SimpleButton(Context pi4j, int address, boolean inverted) {
         this(pi4j, address, inverted, DEFAULT_DEBOUNCE);
     }
 
@@ -82,11 +81,9 @@ public class SimpleButton extends DigitalSensor implements Resetable {
      * @param debounce
      *            Debounce time in microseconds
      */
-    public SimpleButton(Context pi4j, PIN address, boolean inverted, long debounce) {
-        super(pi4j,
-                DigitalInput.newConfigBuilder(pi4j).id("BCM" + address).name("Button #" + address)
-                        .address(address.getPin()).debounce(debounce)
-                        .pull(inverted ? PullResistance.PULL_UP : PullResistance.PULL_DOWN).build());
+    public SimpleButton(Context pi4j, int address, boolean inverted, long debounce) {
+        super(pi4j, DigitalInput.newConfigBuilder(pi4j).id("BCM" + address).name("Button #" + address).address(address)
+                .debounce(debounce).pull(inverted ? PullResistance.PULL_UP : PullResistance.PULL_DOWN).build());
 
         this.inverted = inverted;
 
