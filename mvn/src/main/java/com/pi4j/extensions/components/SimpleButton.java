@@ -98,25 +98,27 @@ public class SimpleButton extends DigitalSensor implements Resetable {
         digitalInput.addListener(digitalStateChangeEvent -> {
             DigitalState state = getState();
 
-            log.trace("Button switched to '%s'", state);
+            log.trace("{} Button switched to {}", address, state);
 
             switch (state) {
             case HIGH -> {
                 if (onDown != null) {
-                    log.trace("onDown triggered");
+                    log.trace("{} onDown triggered", address);
                     onDown.run();
                 }
+
                 if (whileDown != null) {
+                    log.trace("{} whileDown triggered", address);
                     executor.submit(whileDownWorker);
                 }
             }
             case LOW -> {
                 if (onUp != null) {
-                    log.trace("onUp triggered");
+                    log.trace("{} onUp triggered", address);
                     onUp.run();
                 }
             }
-            case UNKNOWN -> log.error("Button is in State UNKNOWN");
+            case UNKNOWN -> log.error("{} Button is in State UNKNOWN", address);
             }
         });
     }

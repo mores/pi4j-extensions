@@ -33,7 +33,7 @@
                         <AppenderRef ref="fileAppender" />
                 </Logger>
 
-                <Logger name="com.pi4j.extensions" level="TRACE" additivity="false">
+                <Logger name="com.pi4j.extensions" level="INFO" additivity="false">
                         <AppenderRef ref="CONSOLE" />
                         <AppenderRef ref="fileAppender" />
                 </Logger>
