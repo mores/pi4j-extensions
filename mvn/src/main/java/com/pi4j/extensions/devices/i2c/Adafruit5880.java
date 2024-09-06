@@ -15,6 +15,7 @@ public class Adafruit5880 {
     private static Logger log = LoggerFactory.getLogger(Adafruit5880.class);
 
     private I2C rotary;
+    private int pins;
 
     public Adafruit5880(Context pi4j, int address) {
 
@@ -22,6 +23,9 @@ public class Adafruit5880 {
         I2CProvider i2CProvider = pi4j.provider("linuxfs-i2c");
 
         rotary = i2CProvider.create(i2cConfig);
+
+        int pin = 24;
+        pins = 1 << pin;
 
         try {
 
@@ -48,4 +52,16 @@ public class Adafruit5880 {
     public int getPosition() throws Exception {
         return Seesaw.read(rotary, Seesaw.ENCODER_BASE, Seesaw.ENCODER_POSITION, 4).getInt();
     }
+
+    public boolean isPressed() throws Exception {
+
+        int button = Seesaw.read(rotary, Seesaw.GPIO_BASE, Seesaw.GPIO_BULK, 4).getInt();
+
+        int result = button & pins;
+        if (result == 0) {
+            return true;
+        }
+        return false;
+    }
+
 }
