@@ -6,6 +6,7 @@ import com.pi4j.io.i2c.I2CConfig;
 import com.pi4j.io.i2c.I2CProvider;
 
 import com.adafruit.Seesaw;
+import com.pi4j.extensions.components.LedColor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,4 +65,18 @@ public class Adafruit5880 {
         return false;
     }
 
+    public void setPixel(int ledColor) throws Exception {
+
+        byte[] msg = new byte[6];
+        msg[0] = (byte) Seesaw.NEOPIXEL_BUF;
+        msg[1] = 0x00;
+        msg[2] = 0x00;
+        msg[3] = (byte) LedColor.getGreenComponent(ledColor);
+        msg[4] = (byte) LedColor.getRedComponent(ledColor);
+        msg[5] = (byte) LedColor.getBlueComponent(ledColor);
+
+        rotary.writeRegister((byte) Seesaw.NEOPIXEL_BASE, msg);
+        rotary.writeRegister((byte) Seesaw.NEOPIXEL_BASE, (byte) Seesaw.NEOPIXEL_SHOW);
+
+    }
 }
