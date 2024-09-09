@@ -70,28 +70,28 @@ public class Adafruit5880 {
 
             ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
-            executor.scheduleAtFixedRate(() -> {
-                CompletableFuture.runAsync(() -> {
+            Runnable task = () -> {
 
-                    try {
-                        if (position != getPosition()) {
-                            position = getPosition();
-                            log.trace("New Position: " + position);
-                            EventBus.getDefault().post(new PositionEvent(position));
-                        }
-
-                        if (pressed != isPressed()) {
-                            pressed = isPressed();
-                            log.trace("Pressed: " + pressed);
-                            EventBus.getDefault().post(new PressEvent(pressed));
-                        }
-
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                try {
+                    if (position != getPosition()) {
+                        position = getPosition();
+                        log.trace("New Position: " + position);
+                        EventBus.getDefault().post(new PositionEvent(position));
                     }
 
-                });
-            }, 0, 50, TimeUnit.MILLISECONDS);
+                    if (pressed != isPressed()) {
+                        pressed = isPressed();
+                        log.trace("Pressed: " + pressed);
+                        EventBus.getDefault().post(new PressEvent(pressed));
+                    }
+
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+
+            };
+
+            executor.scheduleWithFixedDelay(task, 0, 8, TimeUnit.MILLISECONDS);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
