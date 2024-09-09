@@ -1,6 +1,7 @@
 package com.pi4j.extensions.components;
 
 public class LedColor {
+    public static final int BLACK = 0x000000;
     public static final int WHITE = 0xFFFFFF;
     public static final int RED = 0xFF0000;
     public static final int ORANGE = 0xFFA500;

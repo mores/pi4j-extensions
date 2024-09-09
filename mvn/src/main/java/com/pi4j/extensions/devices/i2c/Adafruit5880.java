@@ -1,5 +1,10 @@
 package com.pi4j.extensions.devices.i2c;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import com.pi4j.context.Context;
 import com.pi4j.io.i2c.I2C;
 import com.pi4j.io.i2c.I2CConfig;
@@ -7,6 +12,10 @@ import com.pi4j.io.i2c.I2CProvider;
 
 import com.adafruit.Seesaw;
 import com.pi4j.extensions.components.LedColor;
+import com.pi4j.extensions.events.PositionEvent;
+import com.pi4j.extensions.events.PressEvent;
+
+import org.greenrobot.eventbus.EventBus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +26,9 @@ public class Adafruit5880 {
 
     private I2C rotary;
     private int pins;
+
+    private int position;
+    private boolean pressed;
 
     public Adafruit5880(Context pi4j, int address) {
 
@@ -55,6 +67,31 @@ public class Adafruit5880 {
             data[4] = (byte) 0x00;
             data[5] = (byte) 0x00;
             writeIt(data);
+
+            ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+
+            executor.scheduleAtFixedRate(() -> {
+                CompletableFuture.runAsync(() -> {
+
+                    try {
+                        if (position != getPosition()) {
+                            position = getPosition();
+                            log.trace("New Position: " + position);
+                            EventBus.getDefault().post(new PositionEvent(position));
+                        }
+
+                        if (pressed != isPressed()) {
+                            pressed = isPressed();
+                            log.trace("Pressed: " + pressed);
+                            EventBus.getDefault().post(new PressEvent(pressed));
+                        }
+
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+
+                });
+            }, 0, 50, TimeUnit.MILLISECONDS);
 
         } catch (Exception e) {
             throw new RuntimeException(e);

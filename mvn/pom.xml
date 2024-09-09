@@ -18,6 +18,11 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>org.greenrobot</groupId>
+			<artifactId>eventbus-java</artifactId>
+			<version>3.3.1</version>
+		</dependency>
+		<dependency>
 			<groupId>com.pi4j</groupId>
 			<artifactId>pi4j-plugin-gpiod</artifactId>
 			<version>${pi4j.version}</version>
@@ -28,6 +33,11 @@
 			<artifactId>pi4j-plugin-linuxfs</artifactId>
 			<version>${pi4j.version}</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.17.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.pi4j</groupId>
