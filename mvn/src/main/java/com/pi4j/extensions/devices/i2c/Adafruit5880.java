@@ -7,8 +7,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.pi4j.context.Context;
 import com.pi4j.io.i2c.I2C;
-import com.pi4j.io.i2c.I2CConfig;
-import com.pi4j.io.i2c.I2CProvider;
 
 import com.adafruit.Seesaw;
 import com.pi4j.extensions.components.LedColor;
@@ -30,12 +28,9 @@ public class Adafruit5880 {
     private int position;
     private boolean pressed;
 
-    public Adafruit5880(Context pi4j, int address) {
+    public Adafruit5880(I2C rotary) {
 
-        I2CConfig i2cConfig = I2C.newConfigBuilder(pi4j).id("Adafruit5880").bus(1).device(address).build();
-        I2CProvider i2CProvider = pi4j.provider("linuxfs-i2c");
-
-        rotary = i2CProvider.create(i2cConfig);
+        this.rotary = rotary;
 
         pins = 1 << 24;
 

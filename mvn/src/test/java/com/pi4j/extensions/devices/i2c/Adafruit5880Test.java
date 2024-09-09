@@ -6,6 +6,9 @@ import java.time.Duration;
 
 import com.pi4j.context.Context;
 import com.pi4j.Pi4J;
+import com.pi4j.io.i2c.I2C;
+import com.pi4j.io.i2c.I2CConfig;
+import com.pi4j.io.i2c.I2CProvider;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -63,7 +66,11 @@ public class Adafruit5880Test {
     public void testOne() {
         log.info("testOne");
 
-        knob = new Adafruit5880(pi4j, 0x36);
+        I2CProvider i2CProvider = pi4j.provider("linuxfs-i2c");
+        I2CConfig i2cConfig = I2C.newConfigBuilder(pi4j).id("Adafruit5880").bus(1).device(0x36).build();
+        I2C rotary = i2CProvider.create(i2cConfig);
+
+        knob = new Adafruit5880(rotary);
 
         // Wait for 30 seconds while handling events before exiting
         log.info("Rotate the knob to see it in action!");
