@@ -18,6 +18,8 @@ public class Seesaw {
 
     public static final short NEOPIXEL_BASE = 0x0E;
     public static final short NEOPIXEL_BUF = 0x04;
+    public static final short NEOPIXEL_BUF_LENGTH = 0x03;
+    public static final short NEOPIXEL_PIN = 0x01;
     public static final short NEOPIXEL_SHOW = 0x05;
 
     public static final short STATUS_BASE = 0x00;

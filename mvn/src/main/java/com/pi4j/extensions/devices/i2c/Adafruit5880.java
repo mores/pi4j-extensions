@@ -25,8 +25,7 @@ public class Adafruit5880 {
 
         rotary = i2CProvider.create(i2cConfig);
 
-        int pin = 24;
-        pins = 1 << pin;
+        pins = 1 << 24;
 
         try {
 
@@ -35,15 +34,27 @@ public class Adafruit5880 {
 
             java.nio.ByteBuffer version = Seesaw.read(rotary, Seesaw.STATUS_BASE, Seesaw.STATUS_VERSION, 4);
 
+            byte[] pin = new byte[3];
+            pin[0] = (byte) Seesaw.NEOPIXEL_BASE;
+            pin[1] = (byte) Seesaw.NEOPIXEL_PIN;
+            pin[2] = (byte) 0x06;
+            writeIt(pin);
+
+            byte[] bufLength = new byte[4];
+            bufLength[0] = (byte) Seesaw.NEOPIXEL_BASE;
+            bufLength[1] = (byte) Seesaw.NEOPIXEL_BUF_LENGTH;
+            bufLength[2] = (byte) 0x00;
+            bufLength[3] = (byte) 0x03;
+            writeIt(bufLength);
+
             byte[] data = new byte[6];
             data[0] = (byte) Seesaw.ENCODER_BASE;
             data[1] = (byte) Seesaw.ENCODER_POSITION;
-
-            data[5] = (byte) 0x00;
-            data[4] = (byte) 0x00;
-            data[3] = (byte) 0x00;
             data[2] = (byte) 0x00;
-            rotary.write(data);
+            data[3] = (byte) 0x00;
+            data[4] = (byte) 0x00;
+            data[5] = (byte) 0x00;
+            writeIt(data);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -67,16 +78,26 @@ public class Adafruit5880 {
 
     public void setPixel(int ledColor) throws Exception {
 
-        byte[] msg = new byte[6];
-        msg[0] = (byte) Seesaw.NEOPIXEL_BUF;
-        msg[1] = 0x00;
+        byte[] msg = new byte[7];
+        msg[0] = (byte) Seesaw.NEOPIXEL_BASE;
+        msg[1] = (byte) Seesaw.NEOPIXEL_BUF;
         msg[2] = 0x00;
-        msg[3] = (byte) LedColor.getGreenComponent(ledColor);
-        msg[4] = (byte) LedColor.getRedComponent(ledColor);
-        msg[5] = (byte) LedColor.getBlueComponent(ledColor);
+        msg[3] = 0x00;
+        msg[4] = (byte) LedColor.getGreenComponent(ledColor);
+        msg[5] = (byte) LedColor.getRedComponent(ledColor);
+        msg[6] = (byte) LedColor.getBlueComponent(ledColor);
+        writeIt(msg);
 
-        rotary.writeRegister((byte) Seesaw.NEOPIXEL_BASE, msg);
-        rotary.writeRegister((byte) Seesaw.NEOPIXEL_BASE, (byte) Seesaw.NEOPIXEL_SHOW);
+        byte[] show = new byte[2];
+        show[0] = (byte) Seesaw.NEOPIXEL_BASE;
+        show[1] = (byte) Seesaw.NEOPIXEL_SHOW;
+        writeIt(show);
 
+    }
+
+    private void writeIt(byte[] data) {
+        log.info(org.apache.commons.codec.binary.Hex.encodeHexString(data));
+
+        rotary.write(data);
     }
 }
