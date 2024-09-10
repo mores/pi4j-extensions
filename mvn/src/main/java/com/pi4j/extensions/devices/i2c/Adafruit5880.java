@@ -71,13 +71,13 @@ public class Adafruit5880 {
                     if (position != getPosition()) {
                         position = getPosition();
                         log.trace("New Position: " + position);
-                        EventBus.getDefault().post(new PositionEvent(position));
+                        EventBus.getDefault().post(new PositionEvent(rotary, position));
                     }
 
                     if (pressed != isPressed()) {
                         pressed = isPressed();
                         log.trace("Pressed: " + pressed);
-                        EventBus.getDefault().post(new PressEvent(pressed));
+                        EventBus.getDefault().post(new PressEvent(rotary, pressed));
                     }
 
                 } catch (Exception e) {
@@ -128,7 +128,7 @@ public class Adafruit5880 {
     }
 
     private void writeIt(byte[] data) {
-        log.info(org.apache.commons.codec.binary.Hex.encodeHexString(data));
+        log.trace(rotary.getId() + "\t" + org.apache.commons.codec.binary.Hex.encodeHexString(data));
 
         rotary.write(data);
     }

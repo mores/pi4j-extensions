@@ -46,7 +46,7 @@ public class Adafruit5880Test {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onPositionEvent(PositionEvent event) throws Exception {
 
-        log.info("onPositionEvent: " + event.position);
+        log.info("onPositionEvent: " + event.identity.getId() + "\t" + event.position);
 
         if (5 == event.position) {
             knob.setPixel(LedColor.RED);
@@ -59,7 +59,7 @@ public class Adafruit5880Test {
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onPressEvent(PressEvent event) throws Exception {
-        log.info("onPressEvent: " + event.pressed);
+        log.info("onPressEvent: " + event.identity.getId() + "\t" + event.pressed);
         knob.setPixel(LedColor.BLACK);
     }
 
