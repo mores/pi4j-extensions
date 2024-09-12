@@ -16,8 +16,9 @@ public class Adafruit3787 {
     private static Logger log = LoggerFactory.getLogger(Adafruit3787.class);
 
     private final int BITS_PER_PIXEL = 16;
-    private final int WIDTH = 24;
-    private final int HEIGHT = 24;
+    private final int OFFSET = 80;
+    private final int WIDTH = 120;
+    private final int HEIGHT = 120;
 
     private final byte[] image = new byte[WIDTH * HEIGHT * BITS_PER_PIXEL / 8];
 
@@ -63,16 +64,16 @@ public class Adafruit3787 {
         byte[] cols = new byte[4];
         cols[0] = 0x00;
         cols[1] = 0x00;
-        cols[2] = 0x00;
-        cols[3] = 0x18;
+        cols[2] = (byte) (WIDTH >> 8);
+        cols[3] = (byte) (WIDTH & 0xff);
         data(cols);
 
         command(RASET); // Row addr set
         byte[] row = new byte[4];
         row[0] = 0x00;
         row[1] = 0x50;
-        row[2] = 0x00;
-        row[3] = 0x68;
+        row[2] = (byte) ((OFFSET + HEIGHT) >> 8);
+        row[3] = (byte) ((OFFSET + HEIGHT) & 0xff);
         data(row);
 
         command(INVON);
@@ -88,8 +89,11 @@ public class Adafruit3787 {
 
     private void command(int x) throws com.pi4j.io.exception.IOException, IOException {
 
-        if (x < 0 || x > 0xff)
+        if (x < 0 || x > 0xff) {
             throw new IllegalArgumentException("ST7789 bad command value " + x);
+        }
+
+        log.trace("Command: " + x);
 
         dc.off();
         byte[] buffer = new byte[1];
@@ -111,7 +115,12 @@ public class Adafruit3787 {
 
     private void data(byte[] x) throws IOException, com.pi4j.io.exception.IOException {
 
-        log.info("Data: " + org.apache.commons.codec.binary.Hex.encodeHexString(x));
+        String raw = org.apache.commons.codec.binary.Hex.encodeHexString(x);
+        if (raw.length() > 100) {
+            log.trace("Data: " + raw.substring(0, 80));
+        } else {
+            log.trace("Data: " + raw);
+        }
 
         dc.on();
         spi.write(x);
@@ -206,27 +215,28 @@ public class Adafruit3787 {
 
     private void show() throws IOException {
 
-        window(0, 0, WIDTH - 1, HEIGHT - 1);
+        window(WIDTH - 1, HEIGHT - 1);
         data(0);
         data(image);
     }
 
-    private void window(int x0, int y0, int x1, int y1) throws com.pi4j.io.exception.IOException, IOException {
+    private void window(int width, int height) throws com.pi4j.io.exception.IOException, IOException {
 
+        log.info("window");
         command(CASET); // Column addr set
         byte[] cols = new byte[4];
         cols[0] = 0x00;
         cols[1] = 0x00;
-        cols[2] = 0x00;
-        cols[3] = 0x17;
+        cols[2] = (byte) (width >> 8);
+        cols[3] = (byte) (width & 0xff);
         data(cols);
 
         command(RASET); // Row addr set
         byte[] buf = new byte[4];
         buf[0] = 0x00;
         buf[1] = 0x50;
-        buf[2] = 0x00;
-        buf[3] = 0x67;
+        buf[2] = (byte) ((OFFSET + height) >> 8);
+        buf[3] = (byte) ((OFFSET + height) & 0xff);
         data(buf);
 
         command(RAMWR); // write to RAM
