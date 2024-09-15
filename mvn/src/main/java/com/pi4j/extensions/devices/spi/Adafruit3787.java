@@ -1,7 +1,6 @@
 package com.pi4j.extensions.devices.spi;
 
 import java.io.IOException;
-import java.time.Duration;
 
 import com.pi4j.io.gpio.digital.DigitalOutput;
 import com.pi4j.io.spi.Spi;
@@ -9,6 +8,7 @@ import com.pi4j.io.spi.Spi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.pi4j.extensions.components.LedColor;
 import com.pi4j.extensions.Utils;
 
 public class Adafruit3787 {
@@ -127,46 +127,16 @@ public class Adafruit3787 {
         dc.off();
     }
 
-    public void flash() throws Exception {
+    public void fill(int ledColor) throws Exception {
 
         for (int x = 0; x < WIDTH; ++x) {
             for (int y = 0; y < HEIGHT; ++y) {
-                setPixel(x, y, 255, 0, 0);
+                setPixel(x, y, LedColor.getGreenComponent(ledColor), LedColor.getRedComponent(ledColor),
+                        LedColor.getBlueComponent(ledColor));
             }
         }
         show();
-        Utils.delay(Duration.ofMillis(500));
 
-        for (int x = 0; x < WIDTH; ++x) {
-            for (int y = 0; y < HEIGHT; ++y) {
-                setPixel(x, y, 255, 255, 0);
-            }
-        }
-        show();
-        Utils.delay(Duration.ofMillis(500));
-
-        for (int x = 0; x < WIDTH; ++x) {
-            for (int y = 0; y < HEIGHT; ++y) {
-                setPixel(x, y, 0, 255, 0);
-            }
-        }
-        show();
-        Utils.delay(Duration.ofMillis(500));
-
-        for (int x = 0; x < WIDTH; ++x) {
-            for (int y = 0; y < HEIGHT; ++y) {
-                setPixel(x, y, 0, 255, 255);
-            }
-        }
-        show();
-        Utils.delay(Duration.ofMillis(500));
-
-        for (int x = 0; x < WIDTH; ++x) {
-            for (int y = 0; y < HEIGHT; ++y) {
-                setPixel(x, y, 0, 0, 255);
-            }
-        }
-        show();
     }
 
     private void setPixel(int x, int y, int r, int g, int b) {
