@@ -9,13 +9,15 @@ import org.slf4j.LoggerFactory;
 import com.pi4j.Pi4J;
 import com.pi4j.context.Context;
 import com.pi4j.exception.Pi4JException;
+import com.pi4j.io.gpio.digital.DigitalOutput;
+import com.pi4j.io.gpio.digital.DigitalOutputConfig;
+import com.pi4j.io.gpio.digital.DigitalOutputProvider;
 import com.pi4j.io.spi.Spi;
 import com.pi4j.io.spi.SpiBus;
 import com.pi4j.io.spi.SpiChipSelect;
+import com.pi4j.io.spi.SpiConfig;
 import com.pi4j.io.spi.SpiMode;
 import com.pi4j.io.spi.SpiProvider;
-import com.pi4j.io.gpio.digital.DigitalOutput;
-import com.pi4j.io.gpio.digital.DigitalOutputProvider;
 
 import com.pi4j.extensions.Utils;
 import com.pi4j.extensions.components.LedColor;
@@ -27,6 +29,7 @@ public class Adafruit3787Test {
     private static Context pi4j;
     private Spi spi;
 
+    DigitalOutput bl;
     DigitalOutput dc;
     DigitalOutput rst;
 
@@ -47,15 +50,19 @@ public class Adafruit3787Test {
 
         final DigitalOutputProvider digitalOutputProvider = pi4j.provider("pigpio-digital-output");
 
-        var spi_config = Spi.newConfigBuilder(pi4j).id("Adafruit3787").name("Display").bus(SpiBus.BUS_0)
+        SpiConfig spi_config = Spi.newConfigBuilder(pi4j).id("Adafruit3787").name("Display").bus(SpiBus.BUS_0)
                 .chipSelect(SpiChipSelect.CS_0).baud(24000000).mode(SpiMode.MODE_0).build();
 
         SpiProvider spiProvider = pi4j.provider("pigpio-spi");
 
-        try (var spi = spiProvider.create(spi_config)) {
+        try (Spi spi = spiProvider.create(spi_config)) {
+
+            DigitalOutputConfig bl_config = DigitalOutput.newConfigBuilder(pi4j).address(18).build();
+            bl = digitalOutputProvider.create(bl_config);
+            bl.on();
 
             // used to indicate which is being sent: data vs command
-            var dc_config = DigitalOutput.newConfigBuilder(pi4j).address(25).build();
+            DigitalOutputConfig dc_config = DigitalOutput.newConfigBuilder(pi4j).address(25).build();
             dc = digitalOutputProvider.create(dc_config);
 
             Adafruit3787 display = new Adafruit3787(spi, dc);
