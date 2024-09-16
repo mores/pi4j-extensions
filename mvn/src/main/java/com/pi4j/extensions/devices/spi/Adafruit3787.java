@@ -17,8 +17,8 @@ public class Adafruit3787 {
 
     private final int BITS_PER_PIXEL = 16;
     private final int OFFSET = 80;
-    private final int WIDTH = 120;
-    private final int HEIGHT = 120;
+    private final int WIDTH = 240;
+    private final int HEIGHT = 240;
 
     private final byte[] image = new byte[WIDTH * HEIGHT * BITS_PER_PIXEL / 8];
 
@@ -69,12 +69,12 @@ public class Adafruit3787 {
         data(cols);
 
         command(RASET); // Row addr set
-        byte[] row = new byte[4];
-        row[0] = 0x00;
-        row[1] = 0x50;
-        row[2] = (byte) ((OFFSET + HEIGHT) >> 8);
-        row[3] = (byte) ((OFFSET + HEIGHT) & 0xff);
-        data(row);
+        byte[] rows = new byte[4];
+        rows[0] = 0x00;
+        rows[1] = 0x50;
+        rows[2] = (byte) ((OFFSET + HEIGHT) >> 8);
+        rows[3] = (byte) ((OFFSET + HEIGHT) & 0xff);
+        data(rows);
 
         command(INVON);
 
@@ -117,9 +117,9 @@ public class Adafruit3787 {
 
         String raw = org.apache.commons.codec.binary.Hex.encodeHexString(x);
         if (raw.length() > 100) {
-            log.trace("Data: " + raw.substring(0, 80));
+            log.trace("Data: " + x.length + " " + raw.substring(0, 80));
         } else {
-            log.trace("Data: " + raw);
+            log.trace("Data: " + x.length + " " + raw);
         }
 
         dc.on();
@@ -131,15 +131,15 @@ public class Adafruit3787 {
 
         for (int x = 0; x < WIDTH; ++x) {
             for (int y = 0; y < HEIGHT; ++y) {
-                setPixel(x, y, LedColor.getGreenComponent(ledColor), LedColor.getRedComponent(ledColor),
-                        LedColor.getBlueComponent(ledColor));
+                updateImage(x, y, LedColor.getBlueComponent(ledColor), LedColor.getRedComponent(ledColor),
+                        LedColor.getGreenComponent(ledColor));
             }
         }
         show();
 
     }
 
-    private void setPixel(int x, int y, int r, int g, int b) {
+    private void updateImage(int x, int y, int r, int g, int b) {
 
         if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) {
             throw new IllegalArgumentException("ST7789 Invalid Pixel [" + x + "," + y + "]");
@@ -202,12 +202,12 @@ public class Adafruit3787 {
         data(cols);
 
         command(RASET); // Row addr set
-        byte[] buf = new byte[4];
-        buf[0] = 0x00;
-        buf[1] = 0x50;
-        buf[2] = (byte) ((OFFSET + height) >> 8);
-        buf[3] = (byte) ((OFFSET + height) & 0xff);
-        data(buf);
+        byte[] rows = new byte[4];
+        rows[0] = 0x00;
+        rows[1] = 0x50;
+        rows[2] = (byte) ((OFFSET + height) >> 8);
+        rows[3] = (byte) ((OFFSET + height) & 0xff);
+        data(rows);
 
         command(RAMWR); // write to RAM
     }
