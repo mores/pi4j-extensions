@@ -81,9 +81,29 @@ public class Adafruit3787Test {
                     display.pixel(x, y, LedColor.BLACK);
                 }
             }
+            Utils.delay(Duration.ofMillis(1000));
+
+            int w = 240;
+            int h = 240;
+
+            java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(w, h,
+                    java.awt.image.BufferedImage.TYPE_4BYTE_ABGR);
+            java.awt.Graphics2D g2d = img.createGraphics();
+
+            g2d.setPaint(java.awt.Color.yellow);
+            g2d.fillRect(0, 0, img.getWidth(), img.getHeight());
+
+            g2d.setPaint(java.awt.Color.black);
+            g2d.setFont(new java.awt.Font("TimesRoman", java.awt.Font.PLAIN, 28));
+            g2d.drawString("Hello", 50, 50);
+
+            g2d.dispose();
+
+            display.display(img);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
 }
