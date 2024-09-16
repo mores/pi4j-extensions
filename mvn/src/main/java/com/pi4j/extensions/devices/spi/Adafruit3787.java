@@ -1,5 +1,7 @@
 package com.pi4j.extensions.devices.spi;
 
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.io.IOException;
 
 import com.pi4j.io.gpio.digital.DigitalOutput;
@@ -127,6 +129,32 @@ public class Adafruit3787 {
         dc.off();
     }
 
+    public void display(BufferedImage img) throws Exception {
+
+        byte[] pixels = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
+
+        boolean hasAlphaChannel = img.getAlphaRaster() != null;
+        int pixelLength = 3;
+        if (hasAlphaChannel) {
+            pixelLength = 4;
+        }
+
+        for (int x = 0; x < img.getWidth(); x++) {
+            for (int y = 0; y < img.getHeight(); y++) {
+                int pos = (y * pixelLength * img.getWidth()) + (x * pixelLength);
+
+                int alpha = 0xff & pixels[pos++];
+                int blue = 0xff & pixels[pos++];
+                int green = 0xff & pixels[pos++];
+                int red = 0xff & pixels[pos++];
+
+                updateImage(x, y, red, green, blue);
+            }
+        }
+        showImage();
+
+    }
+
     public void fill(int ledColor) throws Exception {
 
         for (int x = 0; x < WIDTH; ++x) {
@@ -177,8 +205,7 @@ public class Adafruit3787 {
             throw new IllegalArgumentException("Invalid Pixel [" + x + "," + y + "]");
         }
 
-        // This is really horrible. It will break on non-square displays!
-        final int index = ((HEIGHT - 1 - y) + (WIDTH - 1 - x) * WIDTH) * 2;
+        final int index = ((y * WIDTH) + x) * 2;
 
         final int value = calculatePixelColor(r, g, b);
 
