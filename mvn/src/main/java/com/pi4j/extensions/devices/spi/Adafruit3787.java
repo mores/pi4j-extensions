@@ -131,22 +131,65 @@ public class Adafruit3787 {
 
         for (int x = 0; x < WIDTH; ++x) {
             for (int y = 0; y < HEIGHT; ++y) {
-                updateImage(x, y, LedColor.getBlueComponent(ledColor), LedColor.getRedComponent(ledColor),
-                        LedColor.getGreenComponent(ledColor));
+
+                updateImage(x, y, LedColor.getRedComponent(ledColor), LedColor.getGreenComponent(ledColor),
+                        LedColor.getBlueComponent(ledColor));
             }
         }
-        show();
+        showImage();
 
+    }
+
+    public void pixel(int x, int y, int ledColor) throws Exception {
+
+        command(CASET); // Column addr set
+        byte[] cols = new byte[4];
+        cols[0] = 0x00;
+        cols[1] = (byte) x;
+        cols[2] = 0x00;
+        cols[3] = (byte) x;
+        data(cols);
+
+        command(RASET); // Row addr set
+        byte[] rows = new byte[4];
+        rows[0] = (byte) ((OFFSET + y) >> 8);
+        rows[1] = (byte) ((OFFSET + y) & 0xff);
+        rows[2] = (byte) ((OFFSET + y) >> 8);
+        rows[3] = (byte) ((OFFSET + y) & 0xff);
+        data(rows);
+
+        int red = LedColor.getRedComponent(ledColor);
+        int green = LedColor.getGreenComponent(ledColor);
+        int blue = LedColor.getBlueComponent(ledColor);
+
+        final int value = calculatePixelColor(red, green, blue);
+
+        command(RAMWR); // write to RAM
+        byte[] bytes = new byte[2];
+        bytes[0] = (byte) (value >> 8);
+        bytes[1] = (byte) value;
+        data(bytes);
     }
 
     private void updateImage(int x, int y, int r, int g, int b) {
 
         if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) {
-            throw new IllegalArgumentException("ST7789 Invalid Pixel [" + x + "," + y + "]");
+            throw new IllegalArgumentException("Invalid Pixel [" + x + "," + y + "]");
         }
 
+        // This is really horrible. It will break on non-square displays!
+        final int index = ((HEIGHT - 1 - y) + (WIDTH - 1 - x) * WIDTH) * 2;
+
+        final int value = calculatePixelColor(r, g, b);
+
+        image[index] = (byte) (value >> 8);
+        image[index + 1] = (byte) value;
+    }
+
+    private int calculatePixelColor(int r, int g, int b) {
+
         if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
-            throw new IllegalArgumentException("ST7789 Invalid Colour (" + r + "," + g + "," + b + ")");
+            throw new IllegalArgumentException("Invalid Colour (" + r + "," + g + "," + b + ")");
         }
 
         if ((r & 0x04) != 0) {
@@ -174,41 +217,30 @@ public class Adafruit3787 {
         }
 
         final int value = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
-
-        // This is really horrible. It will break on non-square displays!
-        final int index = ((HEIGHT - 1 - y) + (WIDTH - 1 - x) * WIDTH) * 2;
-
-        image[index] = (byte) (value >> 8);
-        image[index + 1] = (byte) value;
+        return value;
 
     }
 
-    private void show() throws IOException {
+    private void showImage() throws IOException {
 
-        window(WIDTH - 1, HEIGHT - 1);
-        data(0);
-        data(image);
-    }
-
-    private void window(int width, int height) throws com.pi4j.io.exception.IOException, IOException {
-
-        log.info("window");
+        log.trace("window");
         command(CASET); // Column addr set
         byte[] cols = new byte[4];
         cols[0] = 0x00;
         cols[1] = 0x00;
-        cols[2] = (byte) (width >> 8);
-        cols[3] = (byte) (width & 0xff);
+        cols[2] = (byte) (WIDTH - 1 >> 8);
+        cols[3] = (byte) (WIDTH - 1 & 0xff);
         data(cols);
 
         command(RASET); // Row addr set
         byte[] rows = new byte[4];
         rows[0] = 0x00;
         rows[1] = 0x50;
-        rows[2] = (byte) ((OFFSET + height) >> 8);
-        rows[3] = (byte) ((OFFSET + height) & 0xff);
+        rows[2] = (byte) ((OFFSET + HEIGHT - 1) >> 8);
+        rows[3] = (byte) ((OFFSET + HEIGHT - 1) & 0xff);
         data(rows);
 
         command(RAMWR); // write to RAM
+        data(image);
     }
 }
