@@ -10,12 +10,18 @@ import java.util.concurrent.CountDownLatch;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Label;
 import javafx.scene.effect.PerspectiveTransform;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
+import javafx.scene.paint.Stop;
+import javafx.scene.Scene;
 
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
@@ -44,6 +50,15 @@ import com.pi4j.io.spi.SpiProvider;
 
 import com.pi4j.extensions.Utils;
 import com.pi4j.extensions.components.LedColor;
+
+import eu.hansolo.medusa.Clock;
+import eu.hansolo.medusa.FGauge;
+import eu.hansolo.medusa.Gauge;
+import eu.hansolo.medusa.GaugeBuilder;
+import eu.hansolo.medusa.GaugeDesign;
+import eu.hansolo.medusa.Gauge.SkinType;
+import eu.hansolo.medusa.Section;
+import eu.hansolo.medusa.SectionBuilder;
 
 public class Adafruit3787Test {
 
@@ -170,10 +185,28 @@ public class Adafruit3787Test {
 
             BufferedImage logo = ImageIO.read(getClass().getClassLoader().getResourceAsStream("pi4j.png"));
             display.display(logo);
-            Utils.delay(Duration.ofMillis(1000));
+            Utils.delay(Duration.ofMillis(500));
 
             BufferedImage distorted = distortImg(logo);
             display.display(distorted);
+            Utils.delay(Duration.ofMillis(1000));
+
+            display.display(createGauge(0.3, false));
+            Utils.delay(Duration.ofMillis(200));
+
+            display.display(createGauge(0.7, false));
+            Utils.delay(Duration.ofMillis(200));
+
+            display.display(createGauge(-0.2, false));
+            Utils.delay(Duration.ofMillis(200));
+
+            display.display(createGauge(0.5, false));
+            Utils.delay(Duration.ofMillis(200));
+
+            display.display(createGauge(-0.8, false));
+            Utils.delay(Duration.ofMillis(200));
+
+            display.display(createGauge(1.2, true));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -191,6 +224,49 @@ public class Adafruit3787Test {
         Border newBorder = BorderFactory.createCompoundBorder(border1, border2);
 
         return newBorder;
+    }
+
+    private BufferedImage createGauge(double value, boolean led) {
+
+        new JFXPanel();
+
+        final BufferedImage[] imageContainer = new BufferedImage[1];
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        Platform.runLater(() -> {
+
+            BorderPane borderPane = new BorderPane();
+            VBox vbox = new VBox();
+            borderPane.setCenter(vbox);
+
+            Label label = new Label("Hello, JavaFX");
+            vbox.getChildren().add(label);
+
+            Gauge gauge = GaugeBuilder.create().skinType(SkinType.AMP).prefSize(210, 200).minValue(-1).maxValue(1)
+                    .tickLabelDecimals(1).decimals(2).startFromZero(true).title("Amp").unit("db")
+                    .sections(new Section(80, 100, javafx.scene.paint.Color.CRIMSON)).sectionsVisible(true)
+                    .animated(true).build();
+
+            gauge.setLedOn(led);
+            gauge.setValue(value);
+            vbox.getChildren().add(gauge);
+
+            Scene scene = new Scene(borderPane, 240, 240);
+
+            WritableImage image = borderPane.snapshot(new SnapshotParameters(), null);
+            BufferedImage img = new BufferedImage(220, 220, BufferedImage.TYPE_4BYTE_ABGR);
+            imageContainer[0] = SwingFXUtils.fromFXImage(image, img);
+            latch.countDown();
+        });
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        return imageContainer[0];
     }
 
     private BufferedImage distortImg(BufferedImage image) {
@@ -237,11 +313,13 @@ public class Adafruit3787Test {
             // Work is done, we decrement the latch which we used for awaiting the end of this thread
             latch.countDown();
         });
+
         try {
             latch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
         return imageContainer[0];
     }
 }
