@@ -4,6 +4,7 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
+import java.awt.image.DataBufferInt;
 import java.io.IOException;
 
 import com.pi4j.io.gpio.digital.DigitalOutput;
@@ -133,34 +134,57 @@ public class Adafruit3787 {
 
     public void display(BufferedImage img) throws Exception {
 
+        log.debug("display: " + img.getWidth() + " x " + img.getHeight());
+
         DataBuffer dataBuffer = img.getRaster().getDataBuffer();
 
-        if (!(dataBuffer instanceof DataBufferByte)) {
-            log.warn("Unable to display BufferedImage DataBufferType: " + dataBuffer.getClass());
-            return;
-        }
-        byte[] pixels = ((DataBufferByte) dataBuffer).getData();
+        if (dataBuffer instanceof DataBufferByte) {
 
-        boolean hasAlphaChannel = img.getAlphaRaster() != null;
-        int pixelLength = 3;
-        if (hasAlphaChannel) {
-            pixelLength = 4;
-        }
+            byte[] pixels = ((DataBufferByte) dataBuffer).getData();
 
-        for (int x = 0; x < img.getWidth(); x++) {
-            for (int y = 0; y < img.getHeight(); y++) {
-                int pos = (y * pixelLength * img.getWidth()) + (x * pixelLength);
-
-                int alpha = 0xff & pixels[pos++];
-                int blue = 0xff & pixels[pos++];
-                int green = 0xff & pixels[pos++];
-                int red = 0xff & pixels[pos++];
-
-                updateImage(x, y, red, green, blue);
+            boolean hasAlphaChannel = img.getAlphaRaster() != null;
+            int pixelLength = 3;
+            if (hasAlphaChannel) {
+                pixelLength = 4;
             }
-        }
-        showImage();
 
+            for (int x = 0; x < img.getWidth(); x++) {
+                for (int y = 0; y < img.getHeight(); y++) {
+                    int pos = (y * pixelLength * img.getWidth()) + (x * pixelLength);
+
+                    int alpha = 0xff & pixels[pos++];
+                    int blue = 0xff & pixels[pos++];
+                    int green = 0xff & pixels[pos++];
+                    int red = 0xff & pixels[pos++];
+
+                    if (x < WIDTH && y < HEIGHT) {
+                        updateImage(x, y, red, green, blue);
+                    }
+                }
+            }
+            showImage();
+        } else if (dataBuffer instanceof DataBufferInt) {
+            int[] pixels = ((DataBufferInt) dataBuffer).getData();
+
+            for (int x = 0; x < img.getWidth(); x++) {
+                for (int y = 0; y < img.getHeight(); y++) {
+
+                    int i = x + y * img.getWidth();
+                    int alpha = (pixels[i] >> 24) & 0xff;
+                    int red = (pixels[i] >> 16) & 0xff;
+                    int green = (pixels[i] >> 8) & 0xff;
+                    int blue = (pixels[i] >> 0) & 0xff;
+
+                    if (x < WIDTH && y < HEIGHT) {
+                        updateImage(x, y, red, green, blue);
+                    }
+
+                }
+            }
+            showImage();
+        } else {
+            log.warn("Unable to display BufferedImage DataBufferType: " + dataBuffer.getClass());
+        }
     }
 
     public void fill(int ledColor) throws Exception {

@@ -1,11 +1,21 @@
 package com.pi4j.extensions.devices.spi;
 
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+
+import javafx.application.Platform;
+import javafx.embed.swing.JFXPanel;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.SnapshotParameters;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.effect.PerspectiveTransform;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
@@ -102,17 +112,17 @@ public class Adafruit3787Test {
             BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_4BYTE_ABGR);
             Graphics2D g2d = img.createGraphics();
 
-            g2d.setPaint(Color.yellow);
+            g2d.setPaint(java.awt.Color.yellow);
             g2d.fillRect(0, 0, img.getWidth(), img.getHeight());
 
-            g2d.setPaint(Color.black);
+            g2d.setPaint(java.awt.Color.black);
             g2d.setFont(new Font("TimesRoman", Font.PLAIN, 28));
             g2d.drawString("Hello", 50, 50);
 
             g2d.dispose();
 
             display.display(img);
-            Utils.delay(Duration.ofMillis(2000));
+            Utils.delay(Duration.ofMillis(1000));
 
             BufferedImage img2 = new BufferedImage(w, h, BufferedImage.TYPE_4BYTE_ABGR);
             Graphics2D graphics = img2.createGraphics();
@@ -137,30 +147,33 @@ public class Adafruit3787Test {
 
             frame.paintAll(graphics);
             display.display(img2);
-            Utils.delay(Duration.ofMillis(2000));
+            Utils.delay(Duration.ofMillis(1000));
 
             hello.setBorder(getBorder(true));
 
             frame.paintAll(graphics);
             display.display(img2);
-            Utils.delay(Duration.ofMillis(2000));
+            Utils.delay(Duration.ofMillis(1000));
 
             world.setBorder(getBorder(true));
             hello.setBorder(getBorder(false));
 
             frame.paintAll(graphics);
             display.display(img2);
-            Utils.delay(Duration.ofMillis(2000));
+            Utils.delay(Duration.ofMillis(1000));
 
             world.setBorder(getBorder(false));
 
             frame.paintAll(graphics);
             display.display(img2);
-            Utils.delay(Duration.ofMillis(2000));
+            Utils.delay(Duration.ofMillis(1000));
 
             BufferedImage logo = ImageIO.read(getClass().getClassLoader().getResourceAsStream("pi4j.png"));
             display.display(logo);
-            Utils.delay(Duration.ofMillis(2000));
+            Utils.delay(Duration.ofMillis(1000));
+
+            BufferedImage distorted = distortImg(logo);
+            display.display(distorted);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -169,14 +182,66 @@ public class Adafruit3787Test {
 
     private Border getBorder(boolean active) {
 
-        Border border1 = new LineBorder(Color.black, 1);
+        Border border1 = new LineBorder(java.awt.Color.black, 1);
         if (active) {
-            border1 = new LineBorder(Color.blue, 2);
+            border1 = new LineBorder(java.awt.Color.blue, 2);
         }
 
         EmptyBorder border2 = new EmptyBorder(5, 10, 5, 10);
         Border newBorder = BorderFactory.createCompoundBorder(border1, border2);
 
         return newBorder;
+    }
+
+    private BufferedImage distortImg(BufferedImage image) {
+
+        // Necessary to initialize the JavaFX platform and to avoid "IllegalStateException: Toolkit not initialized"
+        new JFXPanel();
+
+        // This array allows us to get the distorted image out of the runLater closure below
+        final BufferedImage[] imageContainer = new BufferedImage[1];
+
+        // We use this latch to await the end of the JavaFX thread. Otherwise this method would finish before
+        // the thread creates the distorted image
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        // To avoid "IllegalStateException: Not on FX application thread" we start a JavaFX thread
+        Platform.runLater(() -> {
+            int width = image.getWidth();
+            int height = image.getHeight();
+            Canvas canvas = new Canvas(width, height);
+            GraphicsContext graphicsContext = canvas.getGraphicsContext2D();
+            ImageView imageView = new ImageView(SwingFXUtils.toFXImage(image, null));
+
+            PerspectiveTransform trans = new PerspectiveTransform();
+            trans.setUlx(0);
+            trans.setUly(height / 4);
+            trans.setUrx(width);
+            trans.setUry(0);
+            trans.setLrx(width);
+            trans.setLry(height);
+            trans.setLlx(0);
+            trans.setLly(height - height / 2);
+
+            imageView.setEffect(trans);
+
+            imageView.setRotate(2);
+
+            SnapshotParameters params = new SnapshotParameters();
+            params.setFill(javafx.scene.paint.Color.TRANSPARENT);
+
+            Image newImage = imageView.snapshot(params, null);
+            graphicsContext.drawImage(newImage, 0, 0);
+
+            imageContainer[0] = SwingFXUtils.fromFXImage(newImage, image);
+            // Work is done, we decrement the latch which we used for awaiting the end of this thread
+            latch.countDown();
+        });
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return imageContainer[0];
     }
 }
