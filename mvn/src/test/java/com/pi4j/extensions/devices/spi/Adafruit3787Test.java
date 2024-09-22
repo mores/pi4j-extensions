@@ -7,6 +7,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.time.Duration;
 
+import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -79,13 +80,13 @@ public class Adafruit3787Test {
 
             Adafruit3787 display = new Adafruit3787(spi, dc);
 
-            display.fill(LedColor.WHITE);
+            display.fill(LedColor.RED);
             Utils.delay(Duration.ofMillis(1000));
             display.fill(LedColor.BLUE);
             Utils.delay(Duration.ofMillis(1000));
             display.fill(LedColor.GREEN);
             Utils.delay(Duration.ofMillis(1000));
-            display.fill(LedColor.RED);
+            display.fill(LedColor.WHITE);
             Utils.delay(Duration.ofMillis(1000));
 
             for (int x = 0; x < 240; x++) {
@@ -155,6 +156,10 @@ public class Adafruit3787Test {
 
             frame.paintAll(graphics);
             display.display(img2);
+            Utils.delay(Duration.ofMillis(2000));
+
+            BufferedImage logo = ImageIO.read(getClass().getClassLoader().getResourceAsStream("pi4j.png"));
+            display.display(logo);
             Utils.delay(Duration.ofMillis(2000));
 
         } catch (Exception e) {

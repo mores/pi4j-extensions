@@ -1,6 +1,8 @@
 package com.pi4j.extensions.devices.spi;
 
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
 import java.io.IOException;
 
@@ -131,7 +133,13 @@ public class Adafruit3787 {
 
     public void display(BufferedImage img) throws Exception {
 
-        byte[] pixels = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
+        DataBuffer dataBuffer = img.getRaster().getDataBuffer();
+
+        if (!(dataBuffer instanceof DataBufferByte)) {
+            log.warn("Unable to display BufferedImage DataBufferType: " + dataBuffer.getClass());
+            return;
+        }
+        byte[] pixels = ((DataBufferByte) dataBuffer).getData();
 
         boolean hasAlphaChannel = img.getAlphaRaster() != null;
         int pixelLength = 3;
