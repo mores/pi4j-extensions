@@ -134,7 +134,7 @@ public class Adafruit3787 {
 
     public void display(BufferedImage img) throws Exception {
 
-        log.debug("display: " + img.getWidth() + " x " + img.getHeight());
+        log.debug("display: " + img.getType() + " " + img.getWidth() + " x " + img.getHeight());
 
         DataBuffer dataBuffer = img.getRaster().getDataBuffer();
 
@@ -150,12 +150,32 @@ public class Adafruit3787 {
 
             for (int x = 0; x < img.getWidth(); x++) {
                 for (int y = 0; y < img.getHeight(); y++) {
+
                     int pos = (y * pixelLength * img.getWidth()) + (x * pixelLength);
 
-                    int alpha = 0xff & pixels[pos++];
-                    int blue = 0xff & pixels[pos++];
-                    int green = 0xff & pixels[pos++];
-                    int red = 0xff & pixels[pos++];
+                    int alpha = 0;
+                    int blue = 0;
+                    int green = 0;
+                    int red = 0;
+
+                    if (BufferedImage.TYPE_3BYTE_BGR == img.getType()) {
+                        blue = 0xff & pixels[pos++];
+                        green = 0xff & pixels[pos++];
+                        red = 0xff & pixels[pos++];
+                    } else if (BufferedImage.TYPE_BYTE_GRAY == img.getType()) {
+                        int grayPos = (y * img.getWidth()) + x;
+
+                        blue = 0xff & pixels[grayPos];
+                        green = 0xff & pixels[grayPos];
+                        red = 0xff & pixels[grayPos];
+
+                    } else {
+                        alpha = 0xff & pixels[pos++];
+
+                        blue = 0xff & pixels[pos++];
+                        green = 0xff & pixels[pos++];
+                        red = 0xff & pixels[pos++];
+                    }
 
                     if (x < WIDTH && y < HEIGHT) {
                         updateImage(x, y, red, green, blue);
