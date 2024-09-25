@@ -18,6 +18,11 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-geometry-euclidean</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
 			<groupId>eu.hansolo</groupId>
 			<artifactId>medusa</artifactId>
 			<version>17.1.7</version>
