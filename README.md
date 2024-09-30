@@ -2,9 +2,11 @@
 
 mvn -DskipTests=true clean install
 
-mvn -DskipTests=false -Dtest=com.pi4j.extensions.components.SimpleButtonTest test
+cd extensions
 
-mvn -DskipTests=false -Dtest=com.pi4j.extensions.devices.i2c.Adafruit5880Test test
+sudo mvn -DskipTests=false -Dtest=com.pi4j.extensions.components.SimpleButtonTest test
+
+sudo mvn -DskipTests=false -Dtest=com.pi4j.extensions.devices.i2c.Adafruit5880Test test
 
 apt install xvfb
 sudo -i
