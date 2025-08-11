@@ -98,24 +98,24 @@ public class SimpleButton extends DigitalSensor implements Resetable {
             log.trace("{} Button switched to {}", address, state);
 
             switch (state) {
-            case HIGH -> {
-                if (onDown != null) {
-                    log.trace("{} onDown triggered", address);
-                    onDown.run();
-                }
+                case HIGH -> {
+                    if (onDown != null) {
+                        log.trace("{} onDown triggered", address);
+                        onDown.run();
+                    }
 
-                if (whileDown != null) {
-                    log.trace("{} whileDown triggered", address);
-                    executor.submit(whileDownWorker);
+                    if (whileDown != null) {
+                        log.trace("{} whileDown triggered", address);
+                        executor.submit(whileDownWorker);
+                    }
                 }
-            }
-            case LOW -> {
-                if (onUp != null) {
-                    log.trace("{} onUp triggered", address);
-                    onUp.run();
+                case LOW -> {
+                    if (onUp != null) {
+                        log.trace("{} onUp triggered", address);
+                        onUp.run();
+                    }
                 }
-            }
-            case UNKNOWN -> log.error("{} Button is in State UNKNOWN", address);
+                case UNKNOWN -> log.error("{} Button is in State UNKNOWN", address);
             }
         });
     }
@@ -213,9 +213,9 @@ public class SimpleButton extends DigitalSensor implements Resetable {
      */
     private DigitalState getState() {
         return switch (digitalInput.state()) {
-        case HIGH -> inverted ? DigitalState.LOW : DigitalState.HIGH;
-        case LOW -> inverted ? DigitalState.HIGH : DigitalState.LOW;
-        default -> DigitalState.UNKNOWN;
+            case HIGH -> inverted ? DigitalState.LOW : DigitalState.HIGH;
+            case LOW -> inverted ? DigitalState.HIGH : DigitalState.LOW;
+            default -> DigitalState.UNKNOWN;
         };
     }
 

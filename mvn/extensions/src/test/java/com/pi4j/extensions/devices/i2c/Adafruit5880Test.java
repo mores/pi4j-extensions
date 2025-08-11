@@ -66,7 +66,7 @@ public class Adafruit5880Test {
     public void testOne() {
         log.info("testOne");
 
-        I2CProvider i2CProvider = pi4j.provider("pigpio-i2c");
+        I2CProvider i2CProvider = pi4j.provider("linuxfs-i2c");
         I2CConfig i2cConfig = I2C.newConfigBuilder(pi4j).id("Adafruit5880").bus(1).device(0x36).build();
 
         I2C rotary = i2CProvider.create(i2cConfig);
