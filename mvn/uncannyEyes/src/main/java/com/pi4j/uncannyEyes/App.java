@@ -35,7 +35,7 @@ import com.pi4j.io.spi.SpiMode;
 import com.pi4j.io.spi.SpiProvider;
 
 import com.pi4j.extensions.Utils;
-import com.pi4j.extensions.devices.spi.Adafruit3787;
+import com.pi4j.extensions.drivers.spi.Adafruit3787;
 
 public class App {
 

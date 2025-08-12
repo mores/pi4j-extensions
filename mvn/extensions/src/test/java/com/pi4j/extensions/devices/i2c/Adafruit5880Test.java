@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.pi4j.extensions.Utils;
-import com.pi4j.extensions.components.LedColor;
+import com.pi4j.extensions.LedColor;
 import com.pi4j.extensions.events.PositionEvent;
 import com.pi4j.extensions.events.PressEvent;
 

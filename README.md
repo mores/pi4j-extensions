@@ -8,4 +8,9 @@ mvn -DskipTests=false -Dtest=com.pi4j.extensions.components.SimpleButtonTest tes
 
 mvn -DskipTests=false -Dtest=com.pi4j.extensions.devices.i2c.Adafruit5880Test test
 
+# To see swing rendered
+nohup Xvfb :1 -screen 0 1152x900x8 &
+export DISPLAY=":1"
+xhost +
+
 mvn -DskipTests=false -Dtest=com.pi4j.extensions.devices.spi.Adafruit3787Test test

@@ -16,6 +16,7 @@
 	</properties>
 
 	<modules>
+		<module>drivers</module>
 		<module>extensions</module>
 		<module>uncannyEyes</module>
 	</modules>

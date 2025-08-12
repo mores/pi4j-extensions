@@ -9,7 +9,7 @@ import com.pi4j.context.Context;
 import com.pi4j.io.i2c.I2C;
 
 import com.adafruit.Seesaw;
-import com.pi4j.extensions.components.LedColor;
+import com.pi4j.extensions.LedColor;
 import com.pi4j.extensions.events.PositionEvent;
 import com.pi4j.extensions.events.PressEvent;
 
@@ -128,7 +128,7 @@ public class Adafruit5880 {
     }
 
     private void writeIt(byte[] data) {
-        log.trace(rotary.getId() + "\t" + org.apache.commons.codec.binary.Hex.encodeHexString(data));
+        log.trace(rotary.getId() + "\t" + java.util.HexFormat.of().formatHex(data));
 
         rotary.write(data);
     }
