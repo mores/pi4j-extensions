@@ -1,4 +1,4 @@
-package com.pi4j.extensions.components;
+package com.pi4j.extensions;
 
 public class LedColor {
     public static final int BLACK = 0x000000;

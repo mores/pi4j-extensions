@@ -1,4 +1,4 @@
-package com.pi4j.extensions.devices.spi;
+package com.pi4j.extensions.drivers.spi;
 
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -13,8 +13,7 @@ import com.pi4j.io.spi.Spi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.pi4j.extensions.components.LedColor;
-import com.pi4j.extensions.Utils;
+import com.pi4j.extensions.LedColor;
 
 public class Adafruit3787 {
 
@@ -25,6 +24,12 @@ public class Adafruit3787 {
     private final int WIDTH = 240;
     private final int HEIGHT = 240;
 
+    // TODO - check for it during runtime
+    // cat /sys/module/spidev/parameters/bufsiz
+    // OS Update needs
+    // /boot/firmware/cmdline.txt
+    // spidev.bufsiz=115200
+    // Maynot be needed after all see: https://github.com/Pi4J/pi4j/issues/475
     private final byte[] image = new byte[WIDTH * HEIGHT * BITS_PER_PIXEL / 8];
 
     private static final int SWRESET = 0x01;
@@ -120,7 +125,7 @@ public class Adafruit3787 {
 
     private void data(byte[] x) throws IOException, com.pi4j.io.exception.IOException {
 
-        String raw = org.apache.commons.codec.binary.Hex.encodeHexString(x);
+        String raw = java.util.HexFormat.of().formatHex(x);
         if (raw.length() > 100) {
             log.trace("Data: " + x.length + " " + raw.substring(0, 80));
         } else {
