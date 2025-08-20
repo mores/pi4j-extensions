@@ -43,11 +43,6 @@
 		</dependency>
 		<dependency>
 			<groupId>com.pi4j</groupId>
-			<artifactId>drivers</artifactId>
-			<version>${parent.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.pi4j</groupId>
 			<artifactId>pi4j-plugin-gpiod</artifactId>
 			<version>${pi4j.version}</version>
 		</dependency>
