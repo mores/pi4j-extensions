@@ -41,6 +41,10 @@ public class Jhd1804Test {
         I2C i2c = i2CProvider.create(i2cConfig);
 
         display = new Jhd1804(i2c);
+        display.clear();
+        Utils.delay(Duration.ofMillis(500));
+        display.off();
+        Utils.delay(Duration.ofMillis(500));
         display.setText("Hello world! " + java.time.LocalDateTime.now());
         Utils.delay(Duration.ofSeconds(5));
         for (int x = 0; x < 10; x++) {

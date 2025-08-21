@@ -11,6 +11,9 @@ import com.pi4j.extensions.Utils;
 
 /*
  * Controller AIP31068L & AIP31065
+ *
+ * See also: https://github.com/Seeed-Studio/Grove_LCD_RGB_Backlight/blob/master/rgb_lcd.h
+ * https://github.com/Seeed-Studio/Grove_LCD_RGB_Backlight/blob/master/rgb_lcd.cpp
  */
 
 public class Jhd1804 {
@@ -20,8 +23,14 @@ public class Jhd1804 {
     private static final byte LCD_CLEAR_DISPLAY = (byte) 0x01;
     private static final byte LCD_RETURN_HOME = (byte) 0x02;
     private static final byte LCD_DISPLAY_CONTROL = (byte) 0x08;
+    private static final byte LCD_FUNCTION_SET = (byte) 0x20;
     // flags for display on/off control
     private static final byte LCD_DISPLAY_ON = (byte) 0x04;
+    private static final byte LCD_DISPLAY_OFF = (byte) 0x00;
+
+    // flags for function set
+    private static final byte LCD_2LINE = (byte) 0x08;
+    private static final byte LCD_1LINE = (byte) 0x00;
 
     private I2C device;
 
@@ -29,6 +38,20 @@ public class Jhd1804 {
 
         this.device = device;
 
+    }
+
+    public void clear() throws Exception {
+        textCommand(LCD_CLEAR_DISPLAY);
+    }
+
+    public void off() throws Exception {
+        log.warn("Backlight might be hardwired to power input");
+        textCommand(LCD_DISPLAY_CONTROL | LCD_DISPLAY_OFF);
+    }
+
+    public void on() throws Exception {
+        log.warn("Backlight might be hardwired to power input");
+        textCommand(LCD_DISPLAY_CONTROL | LCD_DISPLAY_ON);
     }
 
     private void textCommand(int cmd) throws Exception {
@@ -40,7 +63,7 @@ public class Jhd1804 {
         textCommand(LCD_CLEAR_DISPLAY);
         Thread.sleep(50);
         textCommand(LCD_DISPLAY_CONTROL | LCD_DISPLAY_ON);
-        textCommand(0x28); // 2 lines
+        textCommand(LCD_FUNCTION_SET | LCD_2LINE);
         Thread.sleep(50);
 
         int count = 0;
@@ -68,7 +91,7 @@ public class Jhd1804 {
         textCommand(LCD_RETURN_HOME);
         Thread.sleep(50);
         textCommand(LCD_DISPLAY_CONTROL | LCD_DISPLAY_ON);
-        textCommand(0x28); // 2 lines
+        textCommand(LCD_FUNCTION_SET | LCD_2LINE);
         Thread.sleep(50);
 
         int count = 0;
