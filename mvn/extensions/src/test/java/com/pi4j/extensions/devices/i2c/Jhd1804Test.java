@@ -43,5 +43,9 @@ public class Jhd1804Test {
         display = new Jhd1804(i2c);
         display.setText("Hello world! " + java.time.LocalDateTime.now());
         Utils.delay(Duration.ofSeconds(5));
+        for (int x = 0; x < 10; x++) {
+            display.setTextNoRefresh("Hello world! " + java.time.LocalDateTime.now());
+            Utils.delay(Duration.ofSeconds(1));
+        }
     }
 }
