@@ -19,122 +19,26 @@ public class Adafruit3787 {
 
     private static Logger log = LoggerFactory.getLogger(Adafruit3787.class);
 
-    private final int BITS_PER_PIXEL = 16;
-    private final int OFFSET = 80;
-    private final int WIDTH = 240;
-    private final int HEIGHT = 240;
-
     // TODO - check for it during runtime
     // cat /sys/module/spidev/parameters/bufsiz
     // OS Update needs
     // /boot/firmware/cmdline.txt
     // spidev.bufsiz=115200
     // Maynot be needed after all see: https://github.com/Pi4J/pi4j/issues/475
+
+    private com.pi4j.driver.display.st7789.St7789Driver driver;
+    private com.pi4j.driver.display.BaseGraphicsDisplayComponent graphics;
+
+    private final int BITS_PER_PIXEL = 16;
+    private final int WIDTH = 240;
+    private final int HEIGHT = 240;
+
     private final byte[] image = new byte[WIDTH * HEIGHT * BITS_PER_PIXEL / 8];
-
-    private static final int SWRESET = 0x01;
-    private static final int SLPOUT = 0x11;
-    private static final int NORON = 0x13;
-    private static final int INVON = 0x21;
-    private static final int DISPON = 0x29;
-    private static final int CASET = 0x2A;
-    private static final int RASET = 0x2B;
-    private static final int RAMWR = 0x2C;
-    private static final int MADCTL = 0x36;
-    private static final int COLMOD = 0x3A;
-
-    private Spi spi;
-    private DigitalOutput dc;
 
     public Adafruit3787(Spi spi, DigitalOutput dc) {
 
-        this.spi = spi;
-        this.dc = dc;
-
-        try {
-            init();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void init() throws Exception {
-
-        command(SWRESET);
-
-        command(SLPOUT);
-
-        command(COLMOD);
-        data(0x55);
-
-        command(MADCTL);
-        data(0x08);
-
-        command(CASET); // Column addr set
-        byte[] cols = new byte[4];
-        cols[0] = 0x00;
-        cols[1] = 0x00;
-        cols[2] = (byte) (WIDTH >> 8);
-        cols[3] = (byte) (WIDTH & 0xff);
-        data(cols);
-
-        command(RASET); // Row addr set
-        byte[] rows = new byte[4];
-        rows[0] = 0x00;
-        rows[1] = 0x50;
-        rows[2] = (byte) ((OFFSET + HEIGHT) >> 8);
-        rows[3] = (byte) ((OFFSET + HEIGHT) & 0xff);
-        data(rows);
-
-        command(INVON);
-
-        command(NORON);
-
-        command(DISPON);
-
-        command(MADCTL);
-        data(0xC0);
-
-    }
-
-    private void command(int x) throws com.pi4j.io.exception.IOException, IOException {
-
-        if (x < 0 || x > 0xff) {
-            throw new IllegalArgumentException("ST7789 bad command value " + x);
-        }
-
-        log.trace("Command: " + x);
-
-        dc.off();
-        byte[] buffer = new byte[1];
-        buffer[0] = (byte) x;
-        spi.write(buffer);
-    }
-
-    private void data(int x) throws IOException, com.pi4j.io.exception.IOException {
-
-        if (x < 0 || x > 0xff) {
-            throw new IllegalArgumentException("ST7789 bad data value " + x);
-        }
-
-        byte[] buffer = new byte[1];
-        buffer[0] = (byte) x;
-
-        data(buffer);
-    }
-
-    private void data(byte[] x) throws IOException, com.pi4j.io.exception.IOException {
-
-        String raw = java.util.HexFormat.of().formatHex(x);
-        if (raw.length() > 100) {
-            log.trace("Data: " + x.length + " " + raw.substring(0, 80));
-        } else {
-            log.trace("Data: " + x.length + " " + raw);
-        }
-
-        dc.on();
-        spi.write(x);
-        dc.off();
+        driver = new com.pi4j.driver.display.st7789.St7789Driver(spi, dc, com.pi4j.driver.display.PixelFormat.RGB_565);
+        graphics = new com.pi4j.driver.display.BaseGraphicsDisplayComponent(driver);
     }
 
     public void display(BufferedImage img) throws Exception {
@@ -213,35 +117,10 @@ public class Adafruit3787 {
     }
 
     public void fill(int ledColor) throws Exception {
-
-        for (int x = 0; x < WIDTH; ++x) {
-            for (int y = 0; y < HEIGHT; ++y) {
-
-                updateImage(x, y, LedColor.getRedComponent(ledColor), LedColor.getGreenComponent(ledColor),
-                        LedColor.getBlueComponent(ledColor));
-            }
-        }
-        showImage();
-
+        graphics.fillRect(0, 0, WIDTH, HEIGHT, ledColor);
     }
 
     public void pixel(int x, int y, int ledColor) throws Exception {
-
-        command(CASET); // Column addr set
-        byte[] cols = new byte[4];
-        cols[0] = 0x00;
-        cols[1] = (byte) x;
-        cols[2] = 0x00;
-        cols[3] = (byte) x;
-        data(cols);
-
-        command(RASET); // Row addr set
-        byte[] rows = new byte[4];
-        rows[0] = (byte) ((OFFSET + y) >> 8);
-        rows[1] = (byte) ((OFFSET + y) & 0xff);
-        rows[2] = (byte) ((OFFSET + y) >> 8);
-        rows[3] = (byte) ((OFFSET + y) & 0xff);
-        data(rows);
 
         int red = LedColor.getRedComponent(ledColor);
         int green = LedColor.getGreenComponent(ledColor);
@@ -249,11 +128,15 @@ public class Adafruit3787 {
 
         final int value = calculatePixelColor(red, green, blue);
 
-        command(RAMWR); // write to RAM
         byte[] bytes = new byte[2];
         bytes[0] = (byte) (value >> 8);
         bytes[1] = (byte) value;
-        data(bytes);
+
+        driver.setPixels(x, y, 1, 1, bytes);
+    }
+
+    private void showImage() throws IOException {
+        driver.setPixels(0, 0, WIDTH, HEIGHT, image);
     }
 
     private void updateImage(int x, int y, int r, int g, int b) {
@@ -303,28 +186,5 @@ public class Adafruit3787 {
         final int value = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
         return value;
 
-    }
-
-    private void showImage() throws IOException {
-
-        log.trace("window");
-        command(CASET); // Column addr set
-        byte[] cols = new byte[4];
-        cols[0] = 0x00;
-        cols[1] = 0x00;
-        cols[2] = (byte) (WIDTH - 1 >> 8);
-        cols[3] = (byte) (WIDTH - 1 & 0xff);
-        data(cols);
-
-        command(RASET); // Row addr set
-        byte[] rows = new byte[4];
-        rows[0] = 0x00;
-        rows[1] = 0x50;
-        rows[2] = (byte) ((OFFSET + HEIGHT - 1) >> 8);
-        rows[3] = (byte) ((OFFSET + HEIGHT - 1) & 0xff);
-        data(rows);
-
-        command(RAMWR); // write to RAM
-        data(image);
     }
 }
