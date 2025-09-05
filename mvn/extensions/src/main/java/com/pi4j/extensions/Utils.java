@@ -41,6 +41,10 @@ public class Utils {
         Vector2D start = segment.getStartPoint();
         Vector2D end = segment.getEndPoint();
         Vector2D direction = end.subtract(start);
+        if (direction.isZero(precision)) {
+            points.add(line.getP1());
+            return points;
+        }
 
         double segmentLength = direction.norm() / numSegments;
 
