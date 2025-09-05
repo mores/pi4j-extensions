@@ -81,12 +81,12 @@ public class App {
             }
         });
 
-        final DigitalOutputProvider digitalOutputProvider = pi4j.provider("pigpio-digital-output");
+        final DigitalOutputProvider digitalOutputProvider = pi4j.provider("gpiod-digital-output");
 
         SpiConfig spi_config = Spi.newConfigBuilder(pi4j).id("Adafruit3787").name("Display").bus(SpiBus.BUS_0)
                 .chipSelect(SpiChipSelect.CS_0).baud(24000000).mode(SpiMode.MODE_0).build();
 
-        SpiProvider spiProvider = pi4j.provider("pigpio-spi");
+        SpiProvider spiProvider = pi4j.provider("linuxfs-spi");
 
         try (Spi spi = spiProvider.create(spi_config)) {
 
