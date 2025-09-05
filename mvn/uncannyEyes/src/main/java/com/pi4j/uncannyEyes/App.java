@@ -34,8 +34,10 @@ import com.pi4j.io.spi.SpiConfig;
 import com.pi4j.io.spi.SpiMode;
 import com.pi4j.io.spi.SpiProvider;
 
+import com.pi4j.drivers.display.AwtGraphicsDisplayComponent;
+import com.pi4j.drivers.display.st7789.St7789Driver;
+
 import com.pi4j.extensions.Utils;
-import com.pi4j.extensions.drivers.spi.Adafruit3787;
 
 public class App {
 
@@ -98,7 +100,10 @@ public class App {
             DigitalOutputConfig dc_config = DigitalOutput.newConfigBuilder(pi4j).address(25).build();
             dc = digitalOutputProvider.create(dc_config);
 
-            Adafruit3787 display = new Adafruit3787(spi, dc);
+            St7789Driver driver = new St7789Driver(spi, dc, 240, com.pi4j.drivers.display.PixelFormat.RGB_444);
+
+            com.pi4j.drivers.display.AwtGraphicsDisplayComponent graphics = new com.pi4j.drivers.display.AwtGraphicsDisplayComponent(
+                    driver);
 
             iris = ImageIO.read(getClass().getClassLoader().getResourceAsStream("defaultEye/iris.png"));
 
@@ -133,7 +138,7 @@ public class App {
                     int x = (int) Math.round(point.getX() - (MAXRANGE / 2.0));
                     int y = (int) Math.round(point.getY() - (MAXRANGE / 2.0));
 
-                    display.display(drawEye(x, y, pupil));
+                    graphics.display(drawEye(x, y, pupil));
                 }
 
                 int randomSleep = random.nextInt(2000);

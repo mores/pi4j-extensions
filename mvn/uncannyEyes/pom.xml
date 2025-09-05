@@ -22,6 +22,11 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.pi4j</groupId>
+			<artifactId>pi4j-drivers</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.pi4j</groupId>
 			<artifactId>pi4j-plugin-gpiod</artifactId>
 			<version>${pi4j.version}</version>
 		</dependency>
