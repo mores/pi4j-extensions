@@ -36,41 +36,62 @@ public class EyelidRenderer {
 
     /**
      * Compute the upper and lower threshold values for this frame. Call once per eye per frame, before the pixel loop.
+     * <p>
+     * The returned thresholds combine three independent effects:
+     * <ol>
+     * <li><b>Base tracking</b> – currently fixed at 0 (eyelids fully open).</li>
+     * <li><b>Squint</b> – upper lid droops down and lower lid rises up, driven by {@link SquintState} deltas passed in
+     * as parameters.</li>
+     * <li><b>Blink</b> – overrides everything; lids slam fully shut on top of whatever squint level is active, then
+     * reopen.</li>
+     * </ol>
      *
      * @param eyeX
-     *            sclera X scroll offset in pixels (0 .. SCLERA_WIDTH - SCREEN_WIDTH)
+     *            sclera X scroll offset in pixels
      * @param eyeY
-     *            sclera Y scroll offset in pixels (0 .. SCLERA_HEIGHT - SCREEN_HEIGHT)
+     *            sclera Y scroll offset in pixels
      * @param blink
      *            this eye's blink state machine
      * @param nowUs
      *            current time in microseconds
+     * @param squintUpper
+     *            upper-lid squint delta from {@link SquintState#getUpperThreshold()} (0 = open)
+     * @param squintLower
+     *            lower-lid squint delta from {@link SquintState#getLowerThreshold()} (0 = open)
      *
      * @return int[2] { upperThreshold, lowerThreshold }
      */
-    public int[] computeThresholds(int eyeX, int eyeY, BlinkState blink, long nowUs) {
-        int lThreshold;
-
-        // Fixed open-eye thresholds – the TRACKING path is disabled because the
-        // sclera scroll offsets (eyeX up to 672, eyeY up to 472) are far too large
-        // to use as screen-space sample coordinates and always drove sampleX/Y
-        // out of bounds, causing the lids to be permanently clamped shut.
+    public int[] computeThresholds(int eyeX, int eyeY, BlinkState blink, long nowUs, int squintUpper, int squintLower) {
+        // Base tracking threshold – fixed open (see earlier comments about sclera
+        // scroll offsets being too large to use as screen-space sample coordinates).
         uThreshold = 0;
-        lThreshold = 0;
+        int lThreshold = 0;
 
-        // Blend in the blink: as blinkFactor rises toward 255, lids close
+        // ── Apply squint ──────────────────────────────────────────────────────
+        // Squint pushes both lids inward from their open position.
+        // Clamp to 253 so a subsequent blink can always push them past the squint.
+        int uSq = Math.min(253, uThreshold + squintUpper);
+        int lSq = Math.min(253, lThreshold + squintLower);
+
+        // ── Blend in blink ────────────────────────────────────────────────────
+        // Blink drives thresholds toward 254 (fully closed) regardless of squint.
+        // When the eye is squinted, the blink still fully closes from the squinted
+        // position, then reopens back to the squinted position.
         int bf = blink.blinkFactor(nowUs);
         if (bf > 0) {
-            // Arduino formula: s = 256-s for ENBLINK, 1+s for DEBLINK
-            // We already get 0→255 for close and 255→0 for open from blinkFactor,
-            // so we just interpolate directly:
-            // threshold moves from its tracking value toward 254 as bf → 255
-            int uOut = uThreshold + (int) ((long) (254 - uThreshold) * bf / 255);
-            int lOut = lThreshold + (int) ((long) (254 - lThreshold) * bf / 255);
+            int uOut = uSq + (int) ((long) (254 - uSq) * bf / 255);
+            int lOut = lSq + (int) ((long) (254 - lSq) * bf / 255);
             return new int[] { uOut, lOut };
         }
 
-        return new int[] { uThreshold, lThreshold };
+        return new int[] { uSq, lSq };
+    }
+
+    /**
+     * Convenience overload with no squint (squint deltas = 0). Use this in SKELETON_MODE or when squinting is disabled.
+     */
+    public int[] computeThresholds(int eyeX, int eyeY, BlinkState blink, long nowUs) {
+        return computeThresholds(eyeX, eyeY, blink, nowUs, 0, 0);
     }
 
     /**

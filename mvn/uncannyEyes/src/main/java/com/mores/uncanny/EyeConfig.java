@@ -75,4 +75,52 @@ public final class EyeConfig {
 
     // ── Number of eyes ────────────────────────────────────────────────────────
     public static final int NUM_EYES = 2;
+
+    // ── Appearance mode ───────────────────────────────────────────────────────
+    /**
+     * When {@code true} the eyelids are disabled entirely, leaving bare eyeballs with no skin — ideal for a skeleton,
+     * zombie, or mechanical character. Blink and squint are also suppressed.
+     * <p>
+     * Set to {@code false} to restore normal eyelid, blink, and squint behaviour.
+     */
+    public static final boolean SKELETON_MODE = false;
+
+    // ── Squinting ─────────────────────────────────────────────────────────────
+    /**
+     * Maximum eyelid threshold added when the eye is fully squinted. A value of 80 narrows the eye opening to roughly
+     * half. Range 0-254; 0 disables squinting, 254 fully closes the lids.
+     */
+    /**
+     * Maximum eyelid threshold added when the eye is at peak squint. 130 gives a heavily narrowed eye — roughly 1/3 of
+     * the opening remains. Range 0-254; 0 disables squinting entirely, 254 fully closes the lids.
+     */
+    public static final int SQUINT_MAX_THRESHOLD = 130;
+
+    /**
+     * How far the lower lid rises relative to the upper lid drop. 1.0 = symmetric; values below 1.0 make the lower lid
+     * move less, matching real anatomy where the upper lid does most of the work.
+     */
+    public static final float SQUINT_LOWER_RATIO = 0.6f;
+
+    /** Minimum time the eye stays in its current squint state before transitioning (µs). */
+    public static final long SQUINT_HOLD_MIN_US = 2_000_000L;
+    /** Maximum time the eye stays in its current squint state before transitioning (µs). */
+    public static final long SQUINT_HOLD_MAX_US = 8_000_000L;
+
+    /** Minimum duration for a squint transition (µs). */
+    public static final long SQUINT_EASE_MIN_US = 200_000L;
+    /** Maximum duration for a squint transition (µs). */
+    public static final long SQUINT_EASE_MAX_US = 600_000L;
+
+    /**
+     * Probability (0.0-1.0) that the eye will choose to go MORE squinted vs LESS squinted each time it transitions.
+     * 0.75 = squinted (or deeply squinted) ~75% of the time, making squint the dominant resting expression.
+     */
+    public static final float SQUINT_PROBABILITY = 0.75f;
+
+    /**
+     * The minimum squint level the eye returns to when "relaxing". 0.0 = fully open; 0.4 = lids stay 40% closed even at
+     * rest. This makes squinting the normal baseline rather than fully open.
+     */
+    public static final float SQUINT_BASELINE = 0.4f;
 }

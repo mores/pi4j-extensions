@@ -115,4 +115,30 @@ public class BlinkState {
         long j = (long) ((rng.nextDouble() * 2.0 - 1.0) * jitterUs);
         return intervalUs + j;
     }
+
+    // ── No-op variant for SKELETON_MODE ───────────────────────────────────────
+
+    /**
+     * A BlinkState that never blinks. Used when {@link EyeConfig#SKELETON_MODE} is true so eyelid and blink code paths
+     * remain intact but never fire.
+     */
+    public static final class NoOp extends BlinkState {
+        public NoOp() {
+            super(new java.util.Random(), Long.MAX_VALUE, 0, 1, 1);
+        }
+
+        @Override
+        public void update(long nowUs) {
+        }
+
+        @Override
+        public int blinkFactor(long nowUs) {
+            return 0;
+        }
+
+        @Override
+        public boolean isOpen() {
+            return true;
+        }
+    }
 }

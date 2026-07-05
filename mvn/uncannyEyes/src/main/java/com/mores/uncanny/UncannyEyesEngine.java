@@ -66,28 +66,32 @@ public class UncannyEyesEngine {
             int[][] irisTex = EyeTextures.loadIris();
             int[][] polar = PolarTable.build(EyeConfig.IRIS_CIRCLE_SIZE, EyeConfig.IRIS_CIRCLE_SIZE);
 
-            // Motion and iris scaling are shared across all eyes
+            // Motion, iris scaling, blinking, and squinting are all shared across
+            // eyes so both eyes always look in the same direction, blink together,
+            // and squint together.
             EyeMotion motion = new EyeMotion(rng);
             IrisScaler irisScaler = new IrisScaler(rng);
+            BlinkState sharedBlink = EyeConfig.SKELETON_MODE ? new BlinkState.NoOp() : new BlinkState(rng);
+            SquintState sharedSquint = EyeConfig.SKELETON_MODE ? null : new SquintState(rng);
 
             int numEyes = displayList.size();
             Eye[] eyes = new Eye[numEyes];
 
+            // In SKELETON_MODE the eyelids are completely disabled: load blank
+            // (all-transparent) maps so isEyelid() never fires, and skip blink/squint.
+            int[][] upperLid = EyeConfig.SKELETON_MODE ? blankLidMap() : EyeTextures.loadUpperLid();
+            int[][] lowerLid = EyeConfig.SKELETON_MODE ? blankLidMap() : EyeTextures.loadLowerLid();
+
             for (int i = 0; i < numEyes; i++) {
                 boolean mirror = (numEyes > 1 && i == 1);
 
-                int[][] upper = EyeTextures.loadUpperLid();
-                int[][] lower = EyeTextures.loadLowerLid();
-
-                EyelidRenderer eyelidRenderer = new EyelidRenderer(upper, lower, EyeConfig.SCREEN_WIDTH,
+                EyelidRenderer eyelidRenderer = new EyelidRenderer(upperLid, lowerLid, EyeConfig.SCREEN_WIDTH,
                         EyeConfig.SCREEN_HEIGHT);
 
                 IrisRenderer irisRenderer = new IrisRenderer(polar, irisTex, sclera, eyelidRenderer);
 
-                // Stagger blink timing so both eyes don't always blink together
-                BlinkState blink = new BlinkState(rng);
-
-                eyes[i] = new Eye(i, mirror, irisRenderer, eyelidRenderer, blink, motion, irisScaler);
+                eyes[i] = new Eye(i, mirror, irisRenderer, eyelidRenderer, sharedBlink, motion, irisScaler,
+                        sharedSquint);
             }
 
             return new UncannyEyesEngine(eyes, displayList.toArray(new com.pi4j.drivers.display.graphics.Graphics[0]));
@@ -152,6 +156,16 @@ public class UncannyEyesEngine {
         // ── Iris scale ────────────────────────────────────────────────────────
         int iScale = eyes[0].irisScaler.getScale();
 
+        // ── Shared blink + squint (advance once, apply to all eyes) ──────────
+        Eye primary = eyes[0];
+        primary.blink.update(nowUs);
+        int squintU = 0, squintL = 0;
+        if (primary.squint != null) {
+            primary.squint.update(nowUs);
+            squintU = primary.squint.getUpperThreshold();
+            squintL = primary.squint.getLowerThreshold();
+        }
+
         // ── Per-eye rendering ─────────────────────────────────────────────────
         for (int e = 0; e < eyes.length; e++) {
             Eye eye = eyes[e];
@@ -169,22 +183,25 @@ public class UncannyEyesEngine {
             int eyeX = map(rawX, 0, 1023, irisCentreX - wanderX, irisCentreX + wanderX);
             int eyeY = map(rawY, 0, 1023, irisCentreY - wanderY, irisCentreY + wanderY);
 
-            // Horizontal convergence: both eyes look slightly inward
+            // Slight inward convergence so both eyes appear to focus at a natural
+            // distance. Left eye (index 0) nudges right (+), right eye nudges left (−).
+            // Both eyes still scroll in the SAME direction for gaze — only the small
+            // convergence offset differs.
             if (eyes.length > 1) {
-                eyeX += EyeConfig.CONVERGENCE_OFFSET;
-                eyeX = Math.min(eyeX, EyeConfig.SCLERA_WIDTH - EyeConfig.SCREEN_WIDTH);
+                int converge = (eye.index == 0) ? EyeConfig.CONVERGENCE_OFFSET : -EyeConfig.CONVERGENCE_OFFSET;
+                eyeX = Math.max(0, Math.min(eyeX + converge, EyeConfig.SCLERA_WIDTH - EyeConfig.SCREEN_WIDTH));
             }
 
-            // Right eye has mirrored sclera X
-            if (eye.mirror) {
-                eyeX = (EyeConfig.SCLERA_WIDTH - EyeConfig.SCREEN_WIDTH) - eyeX;
-            }
+            // NOTE: the mirror flag on the right eye flips the sclera TEXTURE so
+            // the two eye images look like a matched pair (veins, etc.), but we
+            // must NOT flip the scroll offset — that would make the right eye look
+            // in the opposite direction (exotropia). Texture mirroring is handled
+            // inside IrisRenderer/EyeTextures if needed; the scroll offsets are
+            // always the same for both eyes (apart from the small convergence delta).
 
-            // Advance blink state machine
-            eye.blink.update(nowUs);
-
-            // Compute eyelid thresholds for this frame
-            int[] thresh = eye.eyelidRenderer.computeThresholds(eyeX, eyeY, eye.blink, nowUs);
+            // Compute eyelid thresholds for this frame (base + squint + blink).
+            // Blink and squint were already advanced once above for all eyes.
+            int[] thresh = eye.eyelidRenderer.computeThresholds(eyeX, eyeY, eye.blink, nowUs, squintU, squintL);
 
             // Rasterise full frame into the eye's own buffer
             eye.irisRenderer.fillFrame(eye.frameBuf, eyeX, eyeY, iScale, thresh[0], thresh[1]);
@@ -206,5 +223,16 @@ public class UncannyEyesEngine {
     /** Arduino-style map() function. */
     static int map(int v, int inMin, int inMax, int outMin, int outMax) {
         return outMin + (int) ((long) (v - inMin) * (outMax - outMin) / (inMax - inMin));
+    }
+
+    /**
+     * Returns a lid map where every value is 255 (fully transparent / never covered). Used in SKELETON_MODE so
+     * {@link EyelidRenderer#isEyelid} never returns true.
+     */
+    private static int[][] blankLidMap() {
+        int[][] map = new int[EyeConfig.SCREEN_HEIGHT][EyeConfig.SCREEN_WIDTH];
+        for (int[] row : map)
+            java.util.Arrays.fill(row, 255);
+        return map;
     }
 }

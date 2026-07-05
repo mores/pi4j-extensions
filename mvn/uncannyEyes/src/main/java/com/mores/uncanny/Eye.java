@@ -18,6 +18,10 @@ public class Eye {
     public final EyeMotion motion;
     public final IrisScaler irisScaler;
 
+    // ── Per-eye autonomous squint animator ────────────────────────────────────
+    /** Drives random open/squint cycles independently per eye. Null in SKELETON_MODE. */
+    public final SquintState squint;
+
     // ── Frame buffer ──────────────────────────────────────────────────────────
     /** Flat RGB-565 pixel buffer, row-major, length = SCREEN_WIDTH * SCREEN_HEIGHT. */
     public final int[] frameBuf;
@@ -32,7 +36,7 @@ public class Eye {
     public final int index;
 
     public Eye(int index, boolean mirror, IrisRenderer irisRenderer, EyelidRenderer eyelidRenderer, BlinkState blink,
-            EyeMotion motion, IrisScaler irisScaler) {
+            EyeMotion motion, IrisScaler irisScaler, SquintState squint) {
         this.index = index;
         this.mirror = mirror;
         this.irisRenderer = irisRenderer;
@@ -40,6 +44,7 @@ public class Eye {
         this.blink = blink;
         this.motion = motion;
         this.irisScaler = irisScaler;
+        this.squint = squint;
         this.frameBuf = new int[EyeConfig.SCREEN_WIDTH * EyeConfig.SCREEN_HEIGHT];
     }
 }
