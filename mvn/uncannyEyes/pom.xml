@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>com.pi4j</groupId>
 		<artifactId>etc</artifactId>
-		<version>3.0.2-SNAPSHOT</version>
+		<version>4.0.2-SNAPSHOT</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
@@ -23,16 +23,16 @@
 		<dependency>
 			<groupId>com.pi4j</groupId>
 			<artifactId>pi4j-drivers</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>1.1.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.pi4j</groupId>
-			<artifactId>pi4j-plugin-gpiod</artifactId>
+			<artifactId>pi4j-plugin-ffm</artifactId>
 			<version>${pi4j.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.pi4j</groupId>
-			<artifactId>pi4j-plugin-linuxfs</artifactId>
+			<artifactId>pi4j-plugin-ffm</artifactId>
 			<version>${pi4j.version}</version>
 		</dependency>
 		<dependency>
@@ -50,14 +50,23 @@
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.8.1</version>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>com.pi4j.uncannyEyes.App</mainClass>
+						</manifest>
+					</archive>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+				</configuration>
 				<executions>
 					<execution>
-						<id>copy-executable-jars</id>
+						<id>make-assembly</id>
 						<phase>package</phase>
 						<goals>
-							<goal>copy-dependencies</goal>
+							<goal>single</goal>
 						</goals>
 					</execution>
 				</executions>

@@ -1,4 +1,4 @@
-package com.pi4j.etc.uncannyEyes;
+package com.pi4j.uncannyEyes;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -34,8 +34,8 @@ import com.pi4j.io.spi.SpiConfig;
 import com.pi4j.io.spi.SpiMode;
 import com.pi4j.io.spi.SpiProvider;
 
-import com.pi4j.drivers.display.AwtGraphicsDisplayComponent;
-import com.pi4j.drivers.display.st7789.St7789Driver;
+import com.pi4j.drivers.display.graphics.GraphicsDisplay;
+import com.pi4j.drivers.display.graphics.st7789.St7789Driver;
 
 import com.pi4j.extensions.Utils;
 
@@ -83,12 +83,14 @@ public class App {
             }
         });
 
-        final DigitalOutputProvider digitalOutputProvider = pi4j.provider("gpiod-digital-output");
+        pi4j.providers().describe().print(System.out);
+
+        final DigitalOutputProvider digitalOutputProvider = pi4j.provider("ffm-digital-output");
 
         SpiConfig spi_config = Spi.newConfigBuilder(pi4j).id("Adafruit3787").name("Display").bus(SpiBus.BUS_0)
                 .chipSelect(SpiChipSelect.CS_0).baud(24000000).mode(SpiMode.MODE_0).build();
 
-        SpiProvider spiProvider = pi4j.provider("linuxfs-spi");
+        SpiProvider spiProvider = pi4j.provider("ffm-spi");
 
         try (Spi spi = spiProvider.create(spi_config)) {
 
@@ -100,10 +102,12 @@ public class App {
             DigitalOutputConfig dc_config = DigitalOutput.newConfigBuilder(pi4j).address(25).build();
             dc = digitalOutputProvider.create(dc_config);
 
-            St7789Driver driver = new St7789Driver(spi, dc, 240, com.pi4j.drivers.display.PixelFormat.RGB_444);
+            St7789Driver driver = new St7789Driver(spi, dc, 240, com.pi4j.drivers.display.graphics.PixelFormat.RGB_444);
 
-            com.pi4j.drivers.display.AwtGraphicsDisplayComponent graphics = new com.pi4j.drivers.display.AwtGraphicsDisplayComponent(
+            com.pi4j.drivers.display.graphics.GraphicsDisplay graphicsDisplay = new com.pi4j.drivers.display.graphics.GraphicsDisplay(
                     driver);
+
+            com.pi4j.drivers.display.graphics.awt.AwtGraphics awt = new com.pi4j.drivers.display.graphics.awt.AwtGraphics();
 
             iris = ImageIO.read(getClass().getClassLoader().getResourceAsStream("defaultEye/iris.png"));
 
@@ -138,7 +142,7 @@ public class App {
                     int x = (int) Math.round(point.getX() - (MAXRANGE / 2.0));
                     int y = (int) Math.round(point.getY() - (MAXRANGE / 2.0));
 
-                    graphics.display(drawEye(x, y, pupil));
+                    awt.drawImage(graphicsDisplay.getGraphics(), 0, 0, drawEye(x, y, pupil));
                 }
 
                 int randomSleep = random.nextInt(2000);
