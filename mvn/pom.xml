@@ -8,10 +8,10 @@
 
 	<name>etcetera</name>
 	<packaging>pom</packaging>
-	<version>3.0.2-SNAPSHOT</version>
+	<version>4.0.2-SNAPSHOT</version>
 
 	<properties>
-		<pi4j.version>3.0.2</pi4j.version>
+		<pi4j.version>4.0.2</pi4j.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
@@ -61,8 +61,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.14.0</version>
 				<configuration>
-					<source>21</source>
-					<target>21</target>
+					<source>25</source>
+					<target>25</target>
 					<showDeprecation>true</showDeprecation>
 					<showWarnings>true</showWarnings>
 					<compilerArgs>

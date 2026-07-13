@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>com.pi4j</groupId>
 		<artifactId>etc</artifactId>
-		<version>3.0.2-SNAPSHOT</version>
+		<version>4.0.2-SNAPSHOT</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
@@ -23,7 +23,7 @@
 		<dependency>
 			<groupId>com.pi4j</groupId>
 			<artifactId>pi4j-drivers</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>1.1.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -45,17 +45,6 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 			<version>3.18.0</version>
-		</dependency>
-		<dependency>
-			<groupId>com.pi4j</groupId>
-			<artifactId>pi4j-plugin-gpiod</artifactId>
-			<version>${pi4j.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.pi4j</groupId>
-			<artifactId>pi4j-plugin-linuxfs</artifactId>
-			<version>${pi4j.version}</version>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
