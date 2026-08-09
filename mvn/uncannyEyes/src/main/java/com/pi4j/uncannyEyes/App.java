@@ -1,19 +1,5 @@
 package com.pi4j.uncannyEyes;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.awt.geom.Line2D;
-import java.awt.geom.Point2D;
-import java.awt.Point;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-import javax.imageio.ImageIO;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,15 +32,13 @@ public class App {
     private String[] args;
 
     private static Context pi4j;
-    private Spi spi;
+    private Spi spi0;
+    private Spi spi1;
 
     private DigitalOutput bl;
-    private DigitalOutput dc;
 
-    private BufferedImage iris;
-    private BufferedImage sclera;
-    private BufferedImage lower;
-    private BufferedImage upper;
+    private DigitalOutput dc0;
+    private DigitalOutput dc1;
 
     public static void main(String[] args) throws Exception {
 
@@ -87,125 +71,57 @@ public class App {
 
         final DigitalOutputProvider digitalOutputProvider = pi4j.provider("ffm-digital-output");
 
-        SpiConfig spi_config = Spi.newConfigBuilder(pi4j).id("Adafruit3787").name("Display").bus(SpiBus.BUS_0)
+        SpiConfig spi_config0 = Spi.newConfigBuilder(pi4j).id("Swift0").name("Display0").bus(SpiBus.BUS_0)
+                .chipSelect(SpiChipSelect.CS_0).baud(24000000).mode(SpiMode.MODE_0).build();
+
+        SpiConfig spi_config1 = Spi.newConfigBuilder(pi4j).id("Swift1").name("Display1").bus(SpiBus.BUS_1)
                 .chipSelect(SpiChipSelect.CS_0).baud(24000000).mode(SpiMode.MODE_0).build();
 
         SpiProvider spiProvider = pi4j.provider("ffm-spi");
 
-        try (Spi spi = spiProvider.create(spi_config)) {
+        try (Spi spi0 = spiProvider.create(spi_config0);
+                Spi spi1 = spiProvider.create(spi_config1);) {
 
-            DigitalOutputConfig bl_config = DigitalOutput.newConfigBuilder(pi4j).address(18).build();
-            bl = digitalOutputProvider.create(bl_config);
-            bl.on();
+            // DigitalOutputConfig bl_config = DigitalOutput.newConfigBuilder(pi4j).address(18).build();
+            // bl = digitalOutputProvider.create(bl_config);
+            // bl.on();
 
             // used to indicate which is being sent: data vs command
-            DigitalOutputConfig dc_config = DigitalOutput.newConfigBuilder(pi4j).address(25).build();
-            dc = digitalOutputProvider.create(dc_config);
+            DigitalOutputConfig dc_config0 = DigitalOutput.newConfigBuilder(pi4j).address(25).build();
+            dc0 = digitalOutputProvider.create(dc_config0);
 
-            St7789Driver driver = new St7789Driver(spi, dc, 240, com.pi4j.drivers.display.graphics.PixelFormat.RGB_444);
+            DigitalOutputConfig dc_config1 = DigitalOutput.newConfigBuilder(pi4j).address(16).build();
+            dc1 = digitalOutputProvider.create(dc_config1);
 
-            com.pi4j.drivers.display.graphics.GraphicsDisplay graphicsDisplay = new com.pi4j.drivers.display.graphics.GraphicsDisplay(
-                    driver);
+            St7789Driver driver0 = new St7789Driver(spi0, dc0, 240,
+                    com.pi4j.drivers.display.graphics.PixelFormat.RGB_444);
+            St7789Driver driver1 = new St7789Driver(spi1, dc1, 240,
+                    com.pi4j.drivers.display.graphics.PixelFormat.RGB_444);
 
-            com.pi4j.drivers.display.graphics.awt.AwtGraphics awt = new com.pi4j.drivers.display.graphics.awt.AwtGraphics();
+            // Left
+            com.pi4j.drivers.display.graphics.GraphicsDisplay graphicsDisplay0 = new com.pi4j.drivers.display.graphics.GraphicsDisplay(
+                    240, 240);
+            // positive right , positive down
+            graphicsDisplay0.attachDriver(1, 20, driver0,
+                    com.pi4j.drivers.display.graphics.GraphicsDisplay.Rotation.ROTATE_180);
 
-            iris = ImageIO.read(getClass().getClassLoader().getResourceAsStream("defaultEye/iris.png"));
+            // Right
+            com.pi4j.drivers.display.graphics.GraphicsDisplay graphicsDisplay1 = new com.pi4j.drivers.display.graphics.GraphicsDisplay(
+                    240, 240);
+            graphicsDisplay1.attachDriver(0, 0, driver1,
+                    com.pi4j.drivers.display.graphics.GraphicsDisplay.Rotation.ROTATE_180);
 
-            sclera = ImageIO.read(getClass().getClassLoader().getResourceAsStream("defaultEye/sclera.png"));
-
-            lower = ImageIO
-                    .read(getClass().getClassLoader().getResourceAsStream("defaultEye/lid-lower-symmetrical.png"));
-
-            upper = ImageIO
-                    .read(getClass().getClassLoader().getResourceAsStream("defaultEye/lid-upper-symmetrical.png"));
-
-            double MAXRANGE = 125;
-            Random random = new Random();
-
-            java.util.List<Point2D> points = new java.util.ArrayList<>();
-
-            double startX = 0;
-            double startY = 0;
+            com.mores.uncanny.UncannyEyesEngine engine = com.mores.uncanny.UncannyEyesEngine.builder()
+                    .addDisplay(graphicsDisplay0.getGraphics()).addDisplay(graphicsDisplay1.getGraphics()).build();
+            engine.start();
 
             while (1 == 1) {
-                java.awt.geom.Point2D start = new java.awt.geom.Point2D.Double(startX, startY);
-
-                double randomX = random.nextInt((int) MAXRANGE);
-                double randomY = random.nextInt((int) MAXRANGE - 68) + 68;
-                java.awt.geom.Point2D end = new java.awt.geom.Point2D.Double(randomX, randomY);
-
-                int randomFrames = random.nextInt(7) + 3;
-
-                int pupil = random.nextInt(20) + 20;
-
-                for (Point2D point : Utils.pointsOnLine(new java.awt.geom.Line2D.Double(start, end), randomFrames)) {
-                    int x = (int) Math.round(point.getX() - (MAXRANGE / 2.0));
-                    int y = (int) Math.round(point.getY() - (MAXRANGE / 2.0));
-
-                    awt.drawImage(graphicsDisplay.getGraphics(), 0, 0, drawEye(x, y, pupil));
-                }
-
-                int randomSleep = random.nextInt(2000);
-                Utils.delay(Duration.ofMillis(randomSleep));
-
-                startX = randomX;
-                startY = randomY;
+                Thread.yield();
             }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-    }
-
-    // should this be delta from center or absolute ??
-    private BufferedImage drawEye(int x, int y, int pupil) {
-
-        log.debug("drawEye: " + x + " " + y + " " + pupil);
-
-        if (pupil > 30) {
-            pupil = 30;
-        }
-
-        BufferedImage img = new BufferedImage(240, 240, BufferedImage.TYPE_4BYTE_ABGR);
-        Graphics2D g2d = img.createGraphics();
-
-        // 375 x 375 original size
-        g2d.drawImage(sclera, -68 + x, -68 + y, null);
-
-        // Shape starts in upper left of rectangle
-
-        // 80 too big
-        int radius = 70;
-
-        // g2d.setPaint(Color.red);
-
-        // java.awt.Rectangle r = new java.awt.Rectangle(0, 0, iris.getWidth(), iris.getHeight());
-        // java.awt.TexturePaint tp = new java.awt.TexturePaint(iris, r);
-        // g2d.setPaint(tp);
-
-        java.awt.geom.Point2D topLeft = new java.awt.geom.Point2D.Float(12, 12);
-        float rad = 5;
-        float[] dist = { 0.0f, 0.2f, 1.0f };
-        Color[] colors = { Color.RED, Color.WHITE, Color.BLUE };
-        java.awt.RadialGradientPaint rgp = new java.awt.RadialGradientPaint(topLeft, rad, dist, colors);
-        g2d.setPaint(rgp);
-        g2d.fillOval(120 - radius + x, 120 - radius + y, radius * 2, radius * 2);
-
-        // g2d.setPaint(Color.black);
-
-        java.awt.geom.Point2D bottomRight = new java.awt.geom.Point2D.Float(120 + (x / 1.5f), 120 + (y / 1.5f));
-        rad = 25;
-        float[] dist2 = { 0.0f, 0.5f, 1.0f };
-        Color[] colors2 = { Color.BLACK, Color.RED, Color.BLACK };
-        rgp = new java.awt.RadialGradientPaint(bottomRight, rad, dist2, colors2);
-        g2d.setPaint(rgp);
-        g2d.fillOval(120 - pupil + x, 120 - pupil + y, pupil * 2, pupil * 2);
-
-        g2d.drawImage(lower, 0, 0, null);
-        g2d.drawImage(upper, 0, 0, null);
-        g2d.dispose();
-
-        return img;
     }
 }
