@@ -100,11 +100,18 @@ public class UncannyEyesEngine {
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
-    /** Start the background render thread. */
+    /**
+     * Start the background render thread. Runs at max priority: this loop paces itself to ~30fps with tight
+     * Thread.sleep windows, and on constrained hardware (e.g. a Raspberry Pi) it will compete for CPU with anything
+     * else in the same JVM -- a TUI's input/redraw thread, GC, etc. Elevating priority helps the scheduler favor frame
+     * pacing over that other work so eye motion stays smooth instead of stuttering when the process has other threads
+     * active.
+     */
     public void start() {
         running = true;
         renderThread = new Thread(this::renderLoop, "uncanny-render");
         renderThread.setDaemon(true);
+        renderThread.setPriority(Thread.MAX_PRIORITY);
         renderThread.start();
     }
 

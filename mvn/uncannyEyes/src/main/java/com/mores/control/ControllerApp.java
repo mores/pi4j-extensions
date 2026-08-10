@@ -14,20 +14,21 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * A full-screen Lanterna TUI with one panel per DisplayChannel. Each panel lets you pick the display mode and
- * independently adjust that display's x/y offset.
+ * A full-screen Lanterna TUI. Mode is a single, shared control at the top of the window -- switching it changes what
+ * every display shows at the same time, since the two eyes are not independent. Below that is one panel per
+ * DisplayChannel for physical alignment only (x/y offset), which remains independent per display.
  */
 @Slf4j
 public class ControllerApp {
 
     private static final Pattern INTEGER_PATTERN = Pattern.compile("-?[0-9]*");
 
-    private final List<DisplayChannel<?>> channels;
+    private final DisplayGroupController controller;
     private Screen screen;
     private MultiWindowTextGUI gui;
 
-    public ControllerApp(List<DisplayChannel<?>> channels) {
-        this.channels = channels;
+    public ControllerApp(DisplayGroupController controller) {
+        this.controller = controller;
     }
 
     /** Blocks until the user quits the TUI (Quit button or closing the window). */
@@ -42,11 +43,12 @@ public class ControllerApp {
         window.setHints(List.of(Window.Hint.FULL_SCREEN));
 
         Panel channelsRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        for (DisplayChannel<?> channel : channels) {
+        for (DisplayChannel<?> channel : controller.getChannels()) {
             channelsRow.addComponent(buildChannelPanel(channel));
         }
 
         Panel root = new Panel(new BorderLayout());
+        root.addComponent(buildModePanel(), BorderLayout.Location.TOP);
         root.addComponent(channelsRow, BorderLayout.Location.CENTER);
 
         TextBox logBox = new TextBox(new TerminalSize(60, 10), TextBox.Style.MULTI_LINE);
@@ -71,30 +73,49 @@ public class ControllerApp {
                         .withPattern("%d{HH:mm:ss.SSS} [%t] %-5level - %msg%n").build();
             }
 
-            // Build the dynamic, active instance of your Log4j appender logic
+            // Only stream WARN+ into the live TUI panel. The full log (all levels) still goes to fileAppender per
+            // log4j2.xml -- this filter only limits what forces a GUI-thread redraw while the render thread is
+            // running. Without it, every routine INFO line (from this app or any library) pushes a textbox
+            // append + redraw through the GUI thread, which is CPU the render thread needs on constrained hardware
+            // to keep its ~30fps pacing -- exactly what makes eye motion look jittery compared to running the engine
+            // with nothing else in the process (see com.pi4j.uncannyEyes.App).
+            org.apache.logging.log4j.core.filter.ThresholdFilter guiThreshold = org.apache.logging.log4j.core.filter.ThresholdFilter
+                    .createFilter(org.apache.logging.log4j.Level.WARN,
+                            org.apache.logging.log4j.core.Filter.Result.ACCEPT,
+                            org.apache.logging.log4j.core.Filter.Result.DENY);
+
+            // Build the dynamic, active instance of your Log4j appender logic. NOTE: LanternaLogAppender.append()
+            // does not call isFiltered() itself, so a Filter passed only into this constructor would never actually
+            // be consulted -- it's kept here mainly for introspection/tooling. The filter that actually takes effect
+            // is the one passed to addAppender() below, since LoggerConfig wraps each (appender, level, filter) in
+            // an AppenderControl that checks the filter BEFORE calling appender.append().
             com.mores.log.LanternaLogAppender activeAppender = new com.mores.log.LanternaLogAppender("LanternaAppender",
-                    null, xmlLayout, true, org.apache.logging.log4j.core.config.Property.EMPTY_ARRAY);
+                    guiThreshold, xmlLayout, true, org.apache.logging.log4j.core.config.Property.EMPTY_ARRAY);
 
             // Lifecycle triggers: Active appenders require explicit boot sequences before processing logging events
             activeAppender.start();
             config.addAppender(activeAppender);
 
-            // Forcefully hook the appender directly into all defined Loggers in your XML file
-            config.getRootLogger().addAppender(activeAppender, null, null);
+            // Forcefully hook the appender directly into all defined Loggers in your XML file. Pass guiThreshold
+            // here (not null) so it's actually enforced -- everything still reaches fileAppender per log4j2.xml
+            // regardless of this filter, since this only gates the copy that gets pushed onto the GUI thread.
+            config.getRootLogger().addAppender(activeAppender, null, guiThreshold);
 
             if (config.getLoggerConfig("com.pi4j") != null) {
-                config.getLoggerConfig("com.pi4j").addAppender(activeAppender, null, null);
+                config.getLoggerConfig("com.pi4j").addAppender(activeAppender, null, guiThreshold);
             }
             if (config.getLoggerConfig("com.pi4j.extensions") != null) {
-                config.getLoggerConfig("com.pi4j.extensions").addAppender(activeAppender, null, null);
+                config.getLoggerConfig("com.pi4j.extensions").addAppender(activeAppender, null, guiThreshold);
             }
 
             // Push modifications live across the active application logger tree instance
             context.updateLoggers();
 
-            // Send an immediate test validation trail to the UI components
+            // Send an immediate test validation trail to the UI components. WARN (not INFO) so it still shows up
+            // now that the TUI panel only streams WARN+ -- this is a one-off confirmation, not a per-frame log, so
+            // it doesn't reintroduce the redraw-flood problem the WARN threshold above is guarding against.
             org.apache.logging.log4j.LogManager.getLogger(com.mores.log.LanternaLogAppender.class)
-                    .info("Lanterna UI log streaming engine linked successfully!");
+                    .warn("Lanterna UI log streaming engine linked successfully!");
 
         } catch (Exception e) {
             // If anything breaks during contextual runtime hacking, dump the stack safely out to your log file
@@ -117,26 +138,31 @@ public class ControllerApp {
         }
     }
 
-    private Component buildChannelPanel(DisplayChannel<?> channel) {
+    /** One shared mode selector for the whole rig -- changing it switches every display's content together. */
+    private Component buildModePanel() {
         Panel panel = new Panel(new LinearLayout(Direction.VERTICAL));
-        panel.addComponent(new Label(channel.getName()));
 
-        // --- Mode selection ---
         RadioBoxList<DisplayMode> modeList = new RadioBoxList<>(new TerminalSize(24, DisplayMode.values().length));
         int selectedIndex = 0;
         for (int i = 0; i < DisplayMode.values().length; i++) {
             DisplayMode m = DisplayMode.values()[i];
             modeList.addItem(m);
-            if (m == channel.getMode()) {
+            if (m == controller.getMode()) {
                 selectedIndex = i;
             }
         }
         modeList.setCheckedItemIndex(selectedIndex);
         modeList.addListener((newSelection, oldSelection) -> {
             DisplayMode selected = modeList.getItemAt(newSelection);
-            channel.setMode(selected);
+            controller.setMode(selected);
         });
-        panel.addComponent(modeList.withBorder(Borders.singleLine("Mode")));
+        panel.addComponent(modeList.withBorder(Borders.singleLine("Mode (applies to both eyes)")));
+        return panel;
+    }
+
+    private Component buildChannelPanel(DisplayChannel<?> channel) {
+        Panel panel = new Panel(new LinearLayout(Direction.VERTICAL));
+        panel.addComponent(new Label(channel.getName()));
 
         // --- Offset entry ---
         Panel offsetGrid = new Panel(new GridLayout(2));
@@ -185,6 +211,7 @@ public class ControllerApp {
             int x = Integer.parseInt(xBox.getText().trim());
             int y = Integer.parseInt(yBox.getText().trim());
             channel.setOffsets(x, y);
+            controller.refreshChannel(channel);
         } catch (NumberFormatException e) {
             MessageDialog.showMessageDialog(gui, "Invalid offset", "X and Y must be whole numbers.",
                     MessageDialogButton.OK);
@@ -197,5 +224,6 @@ public class ControllerApp {
         xBox.setText(Integer.toString(x));
         yBox.setText(Integer.toString(y));
         channel.setOffsets(x, y);
+        controller.refreshChannel(channel);
     }
 }

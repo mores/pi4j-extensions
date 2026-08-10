@@ -101,17 +101,20 @@ public class Main {
             // Left eye
             GraphicsDisplay graphicsDisplay0 = new GraphicsDisplay(width, height);
             DisplayChannel<St7789Driver> channel0 = new DisplayChannel<>("Left Eye", graphicsDisplay0, driver0, width,
-                    height, 1, 20, GraphicsDisplay.Rotation.ROTATE_180, DisplayMode.TEST_PATTERN // start safe; switch
-                                                                                                 // to UNCANNY_EYES from
-                                                                                                 // the TUI once aligned
-            );
+                    height, 10, 10, GraphicsDisplay.Rotation.ROTATE_180);
 
             // Right eye
             GraphicsDisplay graphicsDisplay1 = new GraphicsDisplay(width, height);
             DisplayChannel<St7789Driver> channel1 = new DisplayChannel<>("Right Eye", graphicsDisplay1, driver1, width,
-                    height, 0, 0, GraphicsDisplay.Rotation.ROTATE_180, DisplayMode.TEST_PATTERN);
+                    height, -10, -10, GraphicsDisplay.Rotation.ROTATE_180);
 
-            ControllerApp controllerApp = new ControllerApp(List.of(channel0, channel1));
+            // Mode (and therefore whether UNCANNY_EYES is active) is shared across both eyes -- they are not
+            // independent, so this is one controller, not one per channel. Start safe on a static pattern; switch
+            // to UNCANNY_EYES from the TUI once both displays are aligned.
+            DisplayGroupController controller = new DisplayGroupController(List.of(channel0, channel1),
+                    DisplayMode.TEST_PATTERN);
+
+            ControllerApp controllerApp = new ControllerApp(controller);
             controllerApp.run(); // blocks until you quit the TUI
 
         } catch (Exception e) {

@@ -3,20 +3,19 @@ package com.mores.control;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.mores.control.renderer.AlignmentPatternRenderer;
-import com.mores.control.renderer.TestPatternRenderer;
-import com.mores.control.renderer.UncannyEyesRenderer;
 import com.pi4j.drivers.display.graphics.Graphics; // TODO: adjust to the actual Graphics type
 import com.pi4j.drivers.display.graphics.GraphicsDisplay;
 import com.pi4j.drivers.display.graphics.GraphicsDisplayDriver;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
 /**
- * Represents one physical display: its GraphicsDisplay/driver pair, its current x/y offset and rotation, and whichever
- * ScreenRenderer is currently active. Driver type is generic (D) since attachDriver()'s driver parameter type depends
- * on which panel driver you're using (St7789Driver, etc.) -- this class doesn't need to know the concrete type, just
- * pass it straight through to attachDriver().
+ * Represents one physical display: its GraphicsDisplay/driver pair, its current x/y offset and rotation. This class
+ * only knows about physical alignment -- it does NOT own a display mode or a renderer. Mode is a property of the whole
+ * rig (see {@link DisplayGroupController}), not of an individual display, because content like Uncanny Eyes must be
+ * driven by a single renderer shared across every display so both eyes stay in sync; letting each DisplayChannel pick
+ * its own mode independently is what causes the eyes to move/blink out of sync with each other. Driver type is generic
+ * (D) since attachDriver()'s driver parameter type depends on which panel driver you're using (St7789Driver, etc.) --
+ * this class doesn't need to know the concrete type, just pass it straight through to attachDriver().
  */
 @Getter
 public class DisplayChannel<D> {
@@ -33,12 +32,9 @@ public class DisplayChannel<D> {
 
     private int xOffset;
     private int yOffset;
-    private DisplayMode mode;
-    private ScreenRenderer renderer;
 
     public DisplayChannel(String name, GraphicsDisplay graphicsDisplay, GraphicsDisplayDriver driver, int width,
-            int height, int initialXOffset, int initialYOffset, GraphicsDisplay.Rotation rotation,
-            DisplayMode initialMode) {
+            int height, int initialXOffset, int initialYOffset, GraphicsDisplay.Rotation rotation) {
         this.name = name;
         this.graphicsDisplay = graphicsDisplay;
         this.graphics = graphicsDisplay.getGraphics();
@@ -50,40 +46,21 @@ public class DisplayChannel<D> {
         this.yOffset = initialYOffset;
 
         attachDriver();
-        setMode(initialMode);
     }
 
-    /** Change what's being shown on this display. Stops the old renderer, starts the new one. */
-    public synchronized void setMode(DisplayMode newMode) {
-        log.info("[{}] switching mode {} -> {}", name, mode, newMode);
-        if (renderer != null) {
-            renderer.stop();
-        }
-        this.mode = newMode;
-        this.renderer = createRenderer(newMode);
-        renderer.start();
-    }
-
-    /** Move this display's content by re-attaching the driver at a new offset. */
+    /**
+     * Move this display's content by re-attaching the driver at a new offset. Whatever renderer is currently active for
+     * this display (owned by {@link DisplayGroupController}) should be refreshed by the caller after this returns, if
+     * it's a static-image renderer.
+     */
     public synchronized void setOffsets(int x, int y) {
         log.info("[{}] setting offsets ({}, {}) -> ({}, {})", name, xOffset, yOffset, x, y);
         this.xOffset = x;
         this.yOffset = y;
         attachDriver();
-        if (renderer != null) {
-            renderer.refresh();
-        }
     }
 
     private void attachDriver() {
         graphicsDisplay.attachDriver(xOffset, yOffset, driver, rotation);
-    }
-
-    private ScreenRenderer createRenderer(DisplayMode m) {
-        return switch (m) {
-            case UNCANNY_EYES -> new UncannyEyesRenderer(graphics);
-            case TEST_PATTERN -> new TestPatternRenderer(graphics, width, height);
-            case ALIGNMENT_PATTERN -> new AlignmentPatternRenderer(graphics, width, height);
-        };
     }
 }
