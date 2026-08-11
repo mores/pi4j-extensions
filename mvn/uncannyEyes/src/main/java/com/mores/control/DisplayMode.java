@@ -4,7 +4,8 @@ package com.mores.control;
  * The content that can be shown on a given physical display. Add new entries here as you add new renderers.
  */
 public enum DisplayMode {
-    UNCANNY_EYES("Uncanny Eyes"), TEST_PATTERN("Test Pattern"), ALIGNMENT_PATTERN("Alignment Pattern");
+    UNCANNY_EYES("Uncanny Eyes"), CYBORG("Cyborg"), TEST_PATTERN("Test Pattern"),
+    ALIGNMENT_PATTERN("Alignment Pattern");
 
     private final String label;
 

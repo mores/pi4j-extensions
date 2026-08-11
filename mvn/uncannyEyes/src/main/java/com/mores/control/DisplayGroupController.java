@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mores.control.renderer.AlignmentPatternRenderer;
+import com.mores.control.renderer.CyborgRenderer;
 import com.mores.control.renderer.TestPatternRenderer;
 import com.mores.control.renderer.UncannyEyesRenderer;
 import lombok.Getter;
@@ -75,6 +76,11 @@ public class DisplayGroupController {
             return List.of(new UncannyEyesRenderer(channels.stream().map(DisplayChannel::getGraphics).toList()));
         }
 
+        if (m == DisplayMode.CYBORG) {
+            // One renderer, given every display, so all screens wander in lock-step off the same shared RNG.
+            return List.of(new CyborgRenderer(channels.stream().map(DisplayChannel::getGraphics).toList()));
+        }
+
         List<ScreenRenderer> renderers = new ArrayList<>(channels.size());
         for (DisplayChannel<?> channel : channels) {
             ScreenRenderer r = switch (m) {
@@ -82,7 +88,7 @@ public class DisplayGroupController {
                         new TestPatternRenderer(channel.getGraphics(), channel.getWidth(), channel.getHeight());
                 case ALIGNMENT_PATTERN ->
                         new AlignmentPatternRenderer(channel.getGraphics(), channel.getWidth(), channel.getHeight());
-                case UNCANNY_EYES -> throw new IllegalStateException("handled above");
+                case UNCANNY_EYES, CYBORG -> throw new IllegalStateException("handled above");
             };
             renderers.add(r);
         }
