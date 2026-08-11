@@ -98,19 +98,33 @@ public class Main {
             int width = 240;
             int height = 240;
 
+            // Read ~/.uncannyEyes (if present) for the mode and per-eye nudge offsets left over from the last run.
+            // Missing/corrupt file -> AppConfig.load() falls back to empty, so the hardcoded defaults below still
+            // apply exactly as before.
+            AppConfig config = AppConfig.load();
+
+            int[] leftOffset = config.getOffset("Left Eye");
+            int leftX = leftOffset != null ? leftOffset[0] : 10;
+            int leftY = leftOffset != null ? leftOffset[1] : 10;
+
+            int[] rightOffset = config.getOffset("Right Eye");
+            int rightX = rightOffset != null ? rightOffset[0] : -10;
+            int rightY = rightOffset != null ? rightOffset[1] : -10;
+
             // Left eye
-            DisplayChannel<St7789Driver> channel0 = new DisplayChannel<>("Left Eye", driver0, width, height, 10, 10,
-                    GraphicsDisplay.Rotation.ROTATE_180);
+            DisplayChannel<St7789Driver> channel0 = new DisplayChannel<>("Left Eye", driver0, width, height, leftX,
+                    leftY, GraphicsDisplay.Rotation.ROTATE_180);
 
             // Right eye
-            DisplayChannel<St7789Driver> channel1 = new DisplayChannel<>("Right Eye", driver1, width, height, -10, -10,
-                    GraphicsDisplay.Rotation.ROTATE_180);
+            DisplayChannel<St7789Driver> channel1 = new DisplayChannel<>("Right Eye", driver1, width, height, rightX,
+                    rightY, GraphicsDisplay.Rotation.ROTATE_180);
 
             // Mode (and therefore whether UNCANNY_EYES is active) is shared across both eyes -- they are not
-            // independent, so this is one controller, not one per channel. Start safe on a static pattern; switch
-            // to UNCANNY_EYES from the TUI once both displays are aligned.
+            // independent, so this is one controller, not one per channel. Falls back to a static pattern if nothing
+            // was saved yet; from then on every mode switch and nudge (via the TUI) is saved back to
+            // ~/.uncannyEyes by the controller.
             DisplayGroupController controller = new DisplayGroupController(List.of(channel0, channel1),
-                    DisplayMode.TEST_PATTERN);
+                    config.getMode(DisplayMode.TEST_PATTERN), config);
 
             ControllerApp controllerApp = new ControllerApp(controller);
             controllerApp.run(); // blocks until you quit the TUI

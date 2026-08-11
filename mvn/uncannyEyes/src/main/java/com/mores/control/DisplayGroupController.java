@@ -19,20 +19,31 @@ import lombok.Getter;
  * at once (see its javadoc) so motion/blink/squint stay synchronized between the two eyes. Modes that don't hold
  * cross-display state (test/alignment patterns) still get one renderer instance per channel internally, but they are
  * all started and stopped together as a unit.
+ * <p>
+ * Every mode switch and every offset change (nudge) is persisted via the optional {@link AppConfig} to
+ * {@code ~/.uncannyEyes}, so the rig comes back up in the same mode and alignment after a restart -- see
+ * {@link com.mores.control.Main} for how the saved config is loaded and applied on startup.
  */
 public class DisplayGroupController {
 
     private static Logger log = LoggerFactory.getLogger(DisplayGroupController.class);
 
     private final List<DisplayChannel<?>> channels;
+    private final AppConfig config;
 
     @Getter
     private DisplayMode mode;
 
     private List<ScreenRenderer> activeRenderers = List.of();
 
-    public DisplayGroupController(List<DisplayChannel<?>> channels, DisplayMode initialMode) {
+    /**
+     * @param config
+     *            persists mode and per-channel nudge offsets to {@code ~/.uncannyEyes} (see {@link AppConfig}). May be
+     *            {@code null} to disable persistence entirely (e.g. in tests).
+     */
+    public DisplayGroupController(List<DisplayChannel<?>> channels, DisplayMode initialMode, AppConfig config) {
         this.channels = List.copyOf(channels);
+        this.config = config;
         setMode(initialMode);
     }
 
@@ -40,7 +51,10 @@ public class DisplayGroupController {
         return channels;
     }
 
-    /** Change what's being shown, across every display at once. Stops whatever was active, starts the new mode. */
+    /**
+     * Change what's being shown, across every display at once. Stops whatever was active, starts the new mode, and
+     * persists the new mode to {@code ~/.uncannyEyes} so it's restored on the next startup.
+     */
     public synchronized void setMode(DisplayMode newMode) {
         log.info("switching mode {} -> {} (all {} displays)", mode, newMode, channels.size());
 
@@ -53,6 +67,10 @@ public class DisplayGroupController {
 
         for (ScreenRenderer r : activeRenderers) {
             r.start();
+        }
+
+        if (config != null) {
+            config.setMode(newMode);
         }
     }
 
@@ -67,6 +85,9 @@ public class DisplayGroupController {
      * that display frozen after a nudge instead of moving.
      */
     public synchronized void onOffsetChanged(DisplayChannel<?> channel) {
+        if (config != null) {
+            config.setOffset(channel.getName(), channel.getXOffset(), channel.getYOffset());
+        }
         setMode(mode);
     }
 
