@@ -99,14 +99,12 @@ public class Main {
             int height = 240;
 
             // Left eye
-            GraphicsDisplay graphicsDisplay0 = new GraphicsDisplay(width, height);
-            DisplayChannel<St7789Driver> channel0 = new DisplayChannel<>("Left Eye", graphicsDisplay0, driver0, width,
-                    height, 10, 10, GraphicsDisplay.Rotation.ROTATE_180);
+            DisplayChannel<St7789Driver> channel0 = new DisplayChannel<>("Left Eye", driver0, width, height, 10, 10,
+                    GraphicsDisplay.Rotation.ROTATE_180);
 
             // Right eye
-            GraphicsDisplay graphicsDisplay1 = new GraphicsDisplay(width, height);
-            DisplayChannel<St7789Driver> channel1 = new DisplayChannel<>("Right Eye", graphicsDisplay1, driver1, width,
-                    height, -10, -10, GraphicsDisplay.Rotation.ROTATE_180);
+            DisplayChannel<St7789Driver> channel1 = new DisplayChannel<>("Right Eye", driver1, width, height, -10, -10,
+                    GraphicsDisplay.Rotation.ROTATE_180);
 
             // Mode (and therefore whether UNCANNY_EYES is active) is shared across both eyes -- they are not
             // independent, so this is one controller, not one per channel. Start safe on a static pattern; switch

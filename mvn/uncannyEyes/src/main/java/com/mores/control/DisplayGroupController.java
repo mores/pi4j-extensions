@@ -1,9 +1,7 @@
 package com.mores.control;
 
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,12 +30,6 @@ public class DisplayGroupController {
 
     private List<ScreenRenderer> activeRenderers = List.of();
 
-    /**
-     * For static-image modes, lets a per-channel offset change refresh just that channel's renderer. Empty in modes
-     * (like Uncanny Eyes) that are driven by a single shared renderer rather than one-per-channel.
-     */
-    private final Map<DisplayChannel<?>, ScreenRenderer> perChannelRenderer = new IdentityHashMap<>();
-
     public DisplayGroupController(List<DisplayChannel<?>> channels, DisplayMode initialMode) {
         this.channels = List.copyOf(channels);
         setMode(initialMode);
@@ -54,7 +46,6 @@ public class DisplayGroupController {
         for (ScreenRenderer r : activeRenderers) {
             r.stop();
         }
-        perChannelRenderer.clear();
 
         this.mode = newMode;
         this.activeRenderers = createRenderers(newMode);
@@ -65,15 +56,17 @@ public class DisplayGroupController {
     }
 
     /**
-     * Re-push content after a single channel's offset changed. For shared renderers (Uncanny Eyes) this is a no-op --
-     * the animation loop naturally picks up the new offset on its next frame. For static renderers, refresh just that
-     * channel so we don't need to redraw displays whose offset didn't change.
+     * Called after a channel's offset changes. DisplayChannel#setOffsets() builds a brand new GraphicsDisplay/Graphics
+     * pair rather than moving the existing one (attachDriver() can't be safely re-issued on the same instance -- see
+     * DisplayChannel's javadoc), so any already-running renderer is now holding a stale Graphics reference to a
+     * GraphicsDisplay nobody draws to anymore. The only correct fix is to rebuild whatever renderer(s) are currently
+     * active so they re-fetch each channel's CURRENT Graphics -- which is exactly what re-running setMode(mode) does.
+     * This applies equally whether the offset changed under a per-channel renderer (Alignment/Test Pattern) or the
+     * single shared Uncanny Eyes engine; a shared engine holding one stale channel's Graphics would otherwise leave
+     * that display frozen after a nudge instead of moving.
      */
-    public synchronized void refreshChannel(DisplayChannel<?> channel) {
-        ScreenRenderer r = perChannelRenderer.get(channel);
-        if (r != null) {
-            r.refresh();
-        }
+    public synchronized void onOffsetChanged(DisplayChannel<?> channel) {
+        setMode(mode);
     }
 
     private List<ScreenRenderer> createRenderers(DisplayMode m) {
@@ -91,7 +84,6 @@ public class DisplayGroupController {
                         new AlignmentPatternRenderer(channel.getGraphics(), channel.getWidth(), channel.getHeight());
                 case UNCANNY_EYES -> throw new IllegalStateException("handled above");
             };
-            perChannelRenderer.put(channel, r);
             renderers.add(r);
         }
         return renderers;

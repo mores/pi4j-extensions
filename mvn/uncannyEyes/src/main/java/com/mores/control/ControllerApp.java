@@ -211,7 +211,7 @@ public class ControllerApp {
             int x = Integer.parseInt(xBox.getText().trim());
             int y = Integer.parseInt(yBox.getText().trim());
             channel.setOffsets(x, y);
-            controller.refreshChannel(channel);
+            controller.onOffsetChanged(channel);
         } catch (NumberFormatException e) {
             MessageDialog.showMessageDialog(gui, "Invalid offset", "X and Y must be whole numbers.",
                     MessageDialogButton.OK);
@@ -224,6 +224,6 @@ public class ControllerApp {
         xBox.setText(Integer.toString(x));
         yBox.setText(Integer.toString(y));
         channel.setOffsets(x, y);
-        controller.refreshChannel(channel);
+        controller.onOffsetChanged(channel);
     }
 }

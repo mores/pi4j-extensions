@@ -82,10 +82,6 @@ public class App {
         try (Spi spi0 = spiProvider.create(spi_config0);
                 Spi spi1 = spiProvider.create(spi_config1);) {
 
-            // DigitalOutputConfig bl_config = DigitalOutput.newConfigBuilder(pi4j).address(18).build();
-            // bl = digitalOutputProvider.create(bl_config);
-            // bl.on();
-
             // used to indicate which is being sent: data vs command
             DigitalOutputConfig dc_config0 = DigitalOutput.newConfigBuilder(pi4j).address(25).build();
             dc0 = digitalOutputProvider.create(dc_config0);
