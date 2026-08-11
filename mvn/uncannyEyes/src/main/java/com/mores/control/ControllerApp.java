@@ -80,7 +80,7 @@ public class ControllerApp {
             // to keep its ~30fps pacing -- exactly what makes eye motion look jittery compared to running the engine
             // with nothing else in the process (see com.pi4j.uncannyEyes.App).
             org.apache.logging.log4j.core.filter.ThresholdFilter guiThreshold = org.apache.logging.log4j.core.filter.ThresholdFilter
-                    .createFilter(org.apache.logging.log4j.Level.WARN,
+                    .createFilter(org.apache.logging.log4j.Level.INFO,
                             org.apache.logging.log4j.core.Filter.Result.ACCEPT,
                             org.apache.logging.log4j.core.Filter.Result.DENY);
 
